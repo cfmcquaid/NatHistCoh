@@ -11,7 +11,7 @@
 #         v     v                      #
 ########################################
 setwd("C:/Users/cfmcquaid/Simulations")
-library("reshape2"); library("deSolve"); library("ggplot2"); #source("Completed/multiplot.R")
+library("reshape2"); library("deSolve"); library("ggplot2"); source("Completed/theme_dark.R")
 # Parameter sets: Average (), Wax (regression), Slow (slow), Full (regression, slow)
 # Ax - rate from compartment A to compartment X, Omega - background mortality
 paramA <- c(Eq=1.00, Ek=0.00, Qs=0.03, Qk=0.00, Kz=0.00, Kq=0.00, Sc=0.22, Sq=0.00, Sz=0.00, Zk=0.00, Zs=0.00, Cy=0.22, Cs=0.00, Ym=0.25, Yc=0.00, Omega=0.02)
@@ -48,10 +48,10 @@ outA <- melt(outA, id.vars = c("time")); outW <- melt(outW, id.vars = c("time"))
 outA$source <- "A"; outW$source <- "W"; outS$source <- "S"; outF$source <- "F"
 out <- rbind(outA, outW, outS, outF)
 # Plot output
-ggplot(out[out$variable %in%c("rate"), ], aes(time, value)) + geom_point(size=2) + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "free")
+theme_set(theme_dark())
+ggplot(out[out$variable %in%c("rate"), ], aes(time, value)) + geom_point(size=2, color="white") + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "free")
 # Fitting parameters and state: output (shown here for the full parameter set) for IDing compartment sizes to generate reasonable initial state, then calculating values so that 2.5-5% of individuals are diseased or dead (due to TB) after 5 years
 Qsz <- out[which(out$source == "F" & out$variable == "Q" & out$time == 5), ]; Ssz <- out[which(out$source == "F" & out$variable == "S" & out$time == 5), ]; Ksz <- out[which(out$source == "F" & out$variable == "K" & out$time == 5), ]; Zsz <- out[which(out$source == "F" & out$variable == "Z" & out$time == 5), ]; Csz <- out[which(out$source == "F" & out$variable == "C" & out$time == 5), ]; Ysz <- out[which(out$source == "F" & out$variable == "Y" & out$time == 5), ]; Msz <- out[which(out$source == "F" & out$variable == "M" & out$time == 5), ];
 (Csz$value + Ysz$value + Msz$value) / (Qsz$value + Ssz$value + Ksz$value + Zsz$value + Csz$value + Ysz$value + Msz$value)
 Qsz <- out[which(out$source == "S" & out$variable == "Q" & out$time == 5), ]; Ssz <- out[which(out$source == "S" & out$variable == "S" & out$time == 5), ]; Ksz <- out[which(out$source == "S" & out$variable == "K" & out$time == 5), ]; Zsz <- out[which(out$source == "S" & out$variable == "Z" & out$time == 5), ]; Csz <- out[which(out$source == "S" & out$variable == "C" & out$time == 5), ]; Ysz <- out[which(out$source == "S" & out$variable == "Y" & out$time == 5), ]; Msz <- out[which(out$source == "S" & out$variable == "M" & out$time == 5), ];
 (Csz$value + Ysz$value + Msz$value) / (Qsz$value + Ssz$value + Ksz$value + Zsz$value + Csz$value + Ysz$value + Msz$value)
-P<-5
