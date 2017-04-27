@@ -11,8 +11,8 @@
 #         v     v                      #
 ########################################
 ##set wd depending on who is coding/playing
-#setwd("C:/Users/cfmcquaid/Simulations")
-setwd("/Users/ReinHouben/Filr/ifolder/Applications (funding and jobs)/2016 - ERC starting grant/Rmodel_nathis/NatHistCoh")
+setwd("C:/Users/cfmcquaid/Simulations")
+#setwd("/Users/ReinHouben/Filr/ifolder/Applications (funding and jobs)/2016 - ERC starting grant/Rmodel_nathis/NatHistCoh")
 
 #Next steps
 # 1. get the prop inc disease after 5 years to 5%
@@ -52,6 +52,8 @@ regr <- function(t, state, parameters){
 # Calculations
 outA <- ode(y = state, times = times, func = regr, parms = paramA); outW <- ode(y = state, times = times, func = regr, parms = paramW); outS <- ode(y = state, times = times, func = regr, parms = paramS); outF <- ode(y = state, times = times, func = regr, parms = paramF)
 outA <- as.data.frame(outA); outW <- as.data.frame(outW); outS <- as.data.frame(outS); outF <- as.data.frame(outF)
+# Removing the first data point at time zero as we only sample after a year
+outA <- outA[-c(1), ]; outW <- outW[-c(1), ]; outS <- outS[-c(1), ]; outF <- outF[-c(1), ]; 
 # Formatting the data for plotting - putting into a melted data.fame, with additional columns for the source matrix and the incidence rate
 outA$rate <- outA$S*paramA["Sc"]; outW$rate <- outW$S*paramW["Sc"]; outS$rate <- outS$S*paramS["Sc"]; outF$rate <- outF$S*paramF["Sc"];
 outA <- melt(outA, id.vars = c("time")); outW <- melt(outW, id.vars = c("time")); outS <- melt(outS, id.vars = c("time")); outF <- melt(outF, id.vars = c("time"))
@@ -60,10 +62,10 @@ out <- rbind(outA, outW, outS, outF)
 # Plot output
 theme_set(theme_bw())
 ##all scenarios
-ggplot(out[out$variable %in%c("rate"), ], aes(time, value)) + geom_point(size=2) + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "free")
+ggplot(out[out$variable %in% c("rate"), ], aes(time, value)) + geom_point(size=2) + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "free")
 ##slow and slow+regression only (S+F)
 out2 <- subset(out, source=='F' | source == 'S', select=time:source)  
-ggplot(out2[out2$variable %in%c("rate"), ], aes(time, value)) + geom_point(size=2) + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "free")
+ggplot(out2[out2$variable %in% c("rate"), ], aes(time, value)) + geom_point(size=2) + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "free")
 
 # Fitting parameters and state: proportion of individuals disease or dead (due to TB) after Otime years, using parameter set Osource
 Osource <- "S"; Otime <- 5
