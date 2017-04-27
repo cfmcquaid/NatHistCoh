@@ -52,8 +52,8 @@ regr <- function(t, state, parameters){
 # Calculations
 outA <- ode(y = state, times = times, func = regr, parms = paramA); outW <- ode(y = state, times = times, func = regr, parms = paramW); outS <- ode(y = state, times = times, func = regr, parms = paramS); outF <- ode(y = state, times = times, func = regr, parms = paramF)
 outA <- as.data.frame(outA); outW <- as.data.frame(outW); outS <- as.data.frame(outS); outF <- as.data.frame(outF)
-# Calculating incidence, subtracting the previous year's cumulative incidence from this year's
-outA$inc <- head(c(outA$T,0) - c(0,outA$T),-1); outW$inc <- head(c(outW$T,0) - c(0,outW$T),-1); outS$inc <- head(c(outS$T,0) - c(0,outS$T),-1); outW$inc <- head(c(outW$T,0) - c(0,outW$T),-1); 
+# Calculating incidence by subtracting the previous year's cumulative incidence from this year's
+outA$inc <- head(c(outA$T,0) - c(0,outA$T),-1); outW$inc <- head(c(outW$T,0) - c(0,outW$T),-1); outS$inc <- head(c(outS$T,0) - c(0,outS$T),-1); outF$inc <- head(c(outF$T,0) - c(0,outF$T),-1); 
 # Removing the first data point at time zero as we only sample after a year
 outA <- outA[-c(1), ]; outW <- outW[-c(1), ]; outS <- outS[-c(1), ]; outF <- outF[-c(1), ]; 
 # Formatting the data for plotting - putting into a melted data.fame, with additional columns for the source matrix
