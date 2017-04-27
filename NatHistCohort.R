@@ -1,17 +1,27 @@
-# CF McQuaid
-# 21/04/2017
+# CF McQuaid & RMGJ Houben
+# Start 21/04/2017 ---> current version 26/04/2017
 # Cohort model of TB including regression and a slow stream
 ########################################
 #         ^     ^     ^     ^          #
 #      -> Q <-> S <-> C <-> Y -> M     # Q - Quiescent, S - Subclinical, C - Minimal (C+S-), Y - Disseminated (C+S+, symptomatic), M - Death (due to disease)
 #     /   ^     ^                      #
-#    E    |     |                      # E - Infected, T - cumulative number disseminated
+#    E    |     |                      # E - Recently Infected, T - cumulative number disseminated
 #     \   v     v                      #
-#      -> K <-> Z                      # K- Quiescent (slow stream), Z- Subclinical (slow stream),
+#      -> K <-> Z                      # K - Quiescent (slow stream), Z- Subclinical (slow stream),
 #         v     v                      #
 ########################################
-setwd("C:/Users/cfmcquaid/Simulations")
-library("reshape2"); library("deSolve"); library("ggplot2"); #source("Completed/theme_dark.R")
+##set wd depending on who is coding/playing
+#setwd("C:/Users/cfmcquaid/Simulations")
+setwd("/Users/ReinHouben/Filr/ifolder/Applications (funding and jobs)/2016 - ERC starting grant/Rmodel_nathis/NatHistCoh")
+
+#Next steps
+# 1. get the prop inc disease after 5 years to 5%
+###   How: play with Eq and Ek values, OR increase progression parameters
+# 2. achieve 1 + start higher and sharper decrease in early years
+###   How: change initial states to more realistic point, based on what prev of disease would be at screening
+###   Also increase progression rates, while decreasing proportion that goes into the fast pathway
+
+library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); #source("Completed/theme_dark.R")
 # Parameter sets: Average (), Wax (regression), Slow (slow), Full (regression, slow)
 # Ax - rate from compartment A to compartment X, Omega - background mortality
 paramA <- c(Eq=1.00, Ek=0.00, Qs=0.03, Qk=0.00, Kz=0.00, Kq=0.00, Sc=0.22, Sq=0.00, Sz=0.00, Zk=0.00, Zs=0.00, Cy=0.22, Cs=0.00, Ym=0.25, Yc=0.00, Omega=0.02)
@@ -49,7 +59,12 @@ outA$source <- "A"; outW$source <- "W"; outS$source <- "S"; outF$source <- "F"
 out <- rbind(outA, outW, outS, outF)
 # Plot output
 theme_set(theme_bw())
+##all scenarios
 ggplot(out[out$variable %in%c("rate"), ], aes(time, value)) + geom_point(size=2) + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "free")
+##slow and slow+regression only (S+F)
+out2 <- subset(out, source=='F' | source == 'S', select=time:source)  
+ggplot(out2[out2$variable %in%c("rate"), ], aes(time, value)) + geom_point(size=2) + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "free")
+
 # Fitting parameters and state: proportion of individuals disease or dead (due to TB) after Otime years, using parameter set Osource
 Osource <- "S"; Otime <- 5
 Osize <- out[which(out$source == Osource & out$variable %in% c("Q", "S", "K", "Z",  "C", "Y", "M") & out$time == Otime), ];
