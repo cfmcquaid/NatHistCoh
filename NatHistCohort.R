@@ -32,7 +32,7 @@ paramF <- c(Eq=0.10, Ek=0.90, Qs=0.50, Qk=0.00, Kz=0.01, Kq=0.00, Sc=0.50, Sq=0.
 state <- c(E=100000, Q=0, K=0, S=0, Z=0, C=0, Y=0, M=0, T=0)
 # Timespan for simulation
 times <- seq(0, 25, by = 1)
-# ODEfunction
+# ODE function
 regr <- function(t, state, parameters){
   with(as.list(c(state, parameters)), {
    # rates of change
@@ -49,16 +49,23 @@ regr <- function(t, state, parameters){
    list(c(dE, dQ, dK, dS, dZ, dC, dY, dM, dT))
   })
 }
-# Calculations
-outA <- ode(y = state, times = times, func = regr, parms = paramA); outW <- ode(y = state, times = times, func = regr, parms = paramW); outS <- ode(y = state, times = times, func = regr, parms = paramS); outF <- ode(y = state, times = times, func = regr, parms = paramF)
-outA <- as.data.frame(outA); outW <- as.data.frame(outW); outS <- as.data.frame(outS); outF <- as.data.frame(outF)
-# Calculating incidence by subtracting the previous year's cumulative incidence from this year's
-outA$inc <- head(c(outA$T,0) - c(0,outA$T),-1); outW$inc <- head(c(outW$T,0) - c(0,outW$T),-1); outS$inc <- head(c(outS$T,0) - c(0,outS$T),-1); outF$inc <- head(c(outF$T,0) - c(0,outF$T),-1); 
-# Removing the first data point at time zero as we only sample after a year
-outA <- outA[-c(1), ]; outW <- outW[-c(1), ]; outS <- outS[-c(1), ]; outF <- outF[-c(1), ]; 
-# Formatting the data for plotting - putting into a melted data.fame, with additional columns for the source matrix
-outA <- melt(outA, id.vars = c("time")); outW <- melt(outW, id.vars = c("time")); outS <- melt(outS, id.vars = c("time")); outF <- melt(outF, id.vars = c("time"))
-outA$source <- "A"; outW$source <- "W"; outS$source <- "S"; outF$source <- "F"
+# Calculation function
+calc <- function(t, state, fxn, parameters, source){
+  out <- ode(y = state, times = t, func = fxn, parms = parameters);
+  out <- as.data.frame(out)
+  # Calculating incidence by subtracting the previous year's cumulative incidence from this year's
+  out$inc <- head(c(out$T,0) - c(0,out$T),-1)
+  # Removing the first data point at time zero as we only sample after a year
+  out <- out[-c(1), ]
+  # Formatting the data for plotting - putting into a melted data.fame, with additional columns for the source matrix
+  out <- melt(out, id.vars = c("time"))
+  out$source <- source
+  return(out)
+}
+outA <- calc(t = times, state = state, fxn = regr, parameters = paramA, source = "A")
+outW <- calc(t = times, state = state, fxn = regr, parameters = paramW, source = "W")
+outS <- calc(t = times, state = state, fxn = regr, parameters = paramS, source = "S")
+outF <- calc(t = times, state = state, fxn = regr, parameters = paramF, source = "F")
 out <- rbind(outA, outW, outS, outF)
 # Plot output
 theme_set(theme_bw())
