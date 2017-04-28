@@ -21,7 +21,7 @@ setwd("C:/Users/cfmcquaid/Simulations")
 ###   How: change initial states to more realistic point, based on what prev of disease would be at screening
 ###   Also increase progression rates, while decreasing proportion that goes into the fast pathway
 
-library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); #source("Completed/theme_dark.R")
+library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr");
 # Parameter sets: Average (), Wax (regression), Slow (slow), Full (regression, slow)
 # Ax - rate from compartment A to compartment X, Omega - background mortality
 paramA <- c(Eq=1.00, Ek=0.00, Qs=0.03, Qk=0.00, Kz=0.00, Kq=0.00, Sc=0.22, Sq=0.00, Sz=0.00, Zk=0.00, Zs=0.00, Cy=0.22, Cs=0.00, Ym=0.25, Yc=0.00, Omega=0)
@@ -32,6 +32,8 @@ paramF <- c(Eq=0.10, Ek=0.90, Qs=0.50, Qk=0.00, Kz=0.01, Kq=0.00, Sc=0.50, Sq=0.
 state <- c(E=100000, Q=0, K=0, S=0, Z=0, C=0, Y=0, M=0, T=0)
 # Timespan for simulation
 times <- seq(0, 25, by = 1)
+# Timespan for burn
+timeb <- seq(0, 5, by = 1)
 # ODE function
 regr <- function(t, state, parameters){
   with(as.list(c(state, parameters)), {
@@ -49,9 +51,16 @@ regr <- function(t, state, parameters){
    list(c(dE, dQ, dK, dS, dZ, dC, dY, dM, dT))
   })
 }
+# Burn off the first X years to establish the proportion of individuals in each compartment, removing diseased
+burn <- function(t, state, fxn, parameters){
+  out <- ode(y = state, times = t, func = fxn, parms = parameters)
+  stateb <- c(out[6, 2], out[6, 3], out[6, 4], out[6, 5], out[6, 6], C=0, Y=0, M=0, T=0)
+  return(stateb)
+}
 # Calculation function
-calc <- function(t, state, fxn, parameters, source){
-  out <- ode(y = state, times = t, func = fxn, parms = parameters);
+calc <- function(t, tb, state, fxn, parameters, source){
+  stateb <- burn(t = tb, state = state, fxn = regr, parameters = parameters)
+  out <- ode(y = stateb, times = t, func = fxn, parms = parameters)
   out <- as.data.frame(out)
   # Calculating incidence by subtracting the previous year's cumulative incidence from this year's
   out$inc <- head(c(out$T,0) - c(0,out$T),-1)
@@ -62,10 +71,10 @@ calc <- function(t, state, fxn, parameters, source){
   out$source <- source
   return(out)
 }
-outA <- calc(t = times, state = state, fxn = regr, parameters = paramA, source = "A")
-outW <- calc(t = times, state = state, fxn = regr, parameters = paramW, source = "W")
-outS <- calc(t = times, state = state, fxn = regr, parameters = paramS, source = "S")
-outF <- calc(t = times, state = state, fxn = regr, parameters = paramF, source = "F")
+outA <- calc(t = times, tb = timeb, state = state, fxn = regr, parameters = paramA, source = "A")
+outW <- calc(t = times, tb = timeb, state = state, fxn = regr, parameters = paramW, source = "W")
+outS <- calc(t = times, tb = timeb, state = state, fxn = regr, parameters = paramS, source = "S")
+outF <- calc(t = times, tb = timeb, state = state, fxn = regr, parameters = paramF, source = "F")
 out <- rbind(outA, outW, outS, outF)
 # Plot output
 theme_set(theme_bw())
@@ -76,11 +85,14 @@ out2 <- subset(out, source=='F' | source == 'S', select=time:source)
 ggplot(out2[out2$variable %in% c("inc"), ], aes(time, value)) + geom_point(size=2) + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "free")
 
 # Fitting parameters and state: proportion of individuals disease or dead (due to TB) after Otime years, using parameter set Osource
-Osource <- "A"; Otime <- 5
-Osize <- out[which(out$source == Osource & out$variable %in% c("E", "Q", "S", "K", "Z",  "C", "Y", "M") & out$time == Otime), ];
-Oinc <- out[which(out$source == Osource & out$variable %in% c("T") & out$time == Otime), ];
+Osource <- "F"; Otime <- 5
+Osize <- out[which(out$source == Osource & out$variable %in% c("E", "Q", "S", "K", "Z",  "C", "Y", "M") & out$time == Otime), ]
+Oinc <- out[which(out$source == Osource & out$variable %in% c("T") & out$time == Otime), ]
 # Point prevalence: total incidence excluding those that may have regressed
-sum(Osize$value[Osize$variable %in% c("C", "Y", "M")]) / sum(Osize$value)
+Pp <- sum(Osize$value[Osize$variable %in% c("C", "Y", "M")]) / sum(Osize$value)
 # Cumulative incidence: total incidence including those that may have regressed
-Oinc$value
+Ci <- Oinc$value
+
+Pp
+Ci
 
