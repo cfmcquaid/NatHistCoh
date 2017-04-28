@@ -33,7 +33,7 @@ state <- c(E=100000, Q=0, K=0, S=0, Z=0, C=0, Y=0, M=0, T=0)
 # Timespan for simulation
 times <- seq(0, 25, by = 1)
 # Timespan for burn
-timeb <- seq(0, 5, by = 1)
+timeb <- 5
 # ODE function
 regr <- function(t, state, parameters){
   with(as.list(c(state, parameters)), {
@@ -52,14 +52,14 @@ regr <- function(t, state, parameters){
   })
 }
 # Burn off the first X years to establish the proportion of individuals in each compartment, removing diseased
-burn <- function(t, state, fxn, parameters){
-  out <- ode(y = state, times = t, func = fxn, parms = parameters)
-  stateb <- c(out[6, 2], out[6, 3], out[6, 4], out[6, 5], out[6, 6], C=0, Y=0, M=0, T=0)
+burn <- function(tb, state, fxn, parameters){
+  out <- ode(y = state, times = seq(0, tb, by = 1), func = fxn, parms = parameters)
+  stateb <- c(out[tb, 2], out[tb, 3], out[tb, 4], out[tb, 5], out[tb, 6], C=0, Y=0, M=0, T=0)
   return(stateb)
 }
 # Calculation function
 calc <- function(t, tb, state, fxn, parameters, source){
-  stateb <- burn(t = tb, state = state, fxn = regr, parameters = parameters)
+  stateb <- burn(tb = tb, state = state, fxn = regr, parameters = parameters)
   out <- ode(y = stateb, times = t, func = fxn, parms = parameters)
   out <- as.data.frame(out)
   # Calculating incidence by subtracting the previous year's cumulative incidence from this year's
@@ -79,10 +79,10 @@ out <- rbind(outA, outW, outS, outF)
 # Plot output
 theme_set(theme_bw())
 ##all scenarios
-# ggplot(out[out$variable %in% c("inc"), ], aes(time, value)) + geom_point(size=2) + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "free")
+ggplot(out[out$variable %in% c("inc"), ], aes(time, value)) + geom_point(size=2) + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "free")
 ##slow and slow+regression only (S+F)
 out2 <- subset(out, source=='F' | source == 'S', select=time:source)  
-ggplot(out2[out2$variable %in% c("inc"), ], aes(time, value)) + geom_point(size=2) + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "free")
+#ggplot(out2[out2$variable %in% c("inc"), ], aes(time, value)) + geom_point(size=2) + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "free")
 
 # Fitting parameters and state: proportion of individuals disease or dead (due to TB) after Otime years, using parameter set Osource
 Osource <- "F"; Otime <- 5
