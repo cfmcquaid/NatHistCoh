@@ -96,3 +96,30 @@ Ci <- Oinc$value
 Pp
 Ci
 
+# Tornado plot
+torn <- function(t, tb, tc, state, fxn, parameters){
+  # Store data
+  data <- rbind(parameters, parameters)
+  rownames(data) <- c('+10%', '-10%')   
+  # Compare to default data set
+  stateb <- burn(tb = tb, state = state, fxn = regr, parameters = parameters)
+  out <- ode(y = stateb, times = t, func = fxn, parms = parameters);
+  def <- out [tc + 1, "T"]
+    for (i in 1:16){
+    # Increasing and decreasing each parameter in turn
+    parametersM = parameters; parametersL = parameters
+    parametersM[i] = parametersM[i] + 0.1*parametersM[i]; parametersL[i] = parametersL[i] - 0.1*parametersL[i]
+    stateM <- burn(tb = tb, state = state, fxn = regr, parameters = parametersM);stateL <- burn(tb = tb, state = state, fxn = regr, parameters = parametersL)
+    outM <- ode(y = stateM, times = t, func = fxn, parms = parametersM); outL <- ode(y = stateL, times = t, func = fxn, parms = parametersL)
+    outM <- def - outM [tc + 1, "T"]; outL <- def - outL [tc + 1, "T"]
+    data[1, i] <- outM; data[2, i] <- outL; 
+  }
+  return(data)
+}
+data <- torn(t = times, tb = timeb, tc = Otime, state = state, fxn = regr, parameters = paramF)
+# For plotting '%' on x-axis
+x <- seq(-0.01,0.01, length=10)
+ORD = order(abs(data[2,] - data[1,]))
+barplot(data[1,ORD], horiz = T, las=1, xlim = c(-0.01,0.01), xaxt='n', ylab = '', beside=T, col=c('black'))
+barplot(data[2,ORD], horiz = T, las=1, xlim = c(-0.01,0.01), xaxt='n', ylab = '', beside=T, col=c('white'), add = TRUE)
+axis(1, at=pretty(x), lab=paste0(pretty(x) * 100," %"), las=TRUE)
