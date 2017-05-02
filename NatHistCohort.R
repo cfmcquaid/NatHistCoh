@@ -24,10 +24,10 @@ setwd("C:/Users/cfmcquaid/Simulations")
 library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr");
 # Parameter sets: Average (), Wax (regression), Slow (slow), Full (regression, slow)
 # Ax - rate from compartment A to compartment X, Omega - background mortality
-paramA <- c(Eq=1.00, Ek=0.00, Qs=0.03, Qk=0.00, Kz=0.00, Kq=0.00, Sc=0.22, Sq=0.00, Sz=0.00, Zk=0.00, Zs=0.00, Cy=0.22, Cs=0.00, Ym=0.25, Yc=0.00, Omega=0)
-paramW <- c(Eq=1.00, Ek=0.00, Qs=0.03, Qk=0.00, Kz=0.00, Kq=0.00, Sc=0.50, Sq=0.25, Sz=0.00, Zk=0.00, Zs=0.00, Cy=0.50, Cs=0.25, Ym=0.50, Yc=0.25, Omega=0)
-paramS <- c(Eq=0.10, Ek=0.90, Qs=0.50, Qk=0.00, Kz=0.01, Kq=0.00, Sc=0.22, Sq=0.00, Sz=0.00, Zk=0.00, Zs=0.05, Cy=0.22, Cs=0.00, Ym=0.25, Yc=0.00, Omega=0)
-paramF <- c(Eq=0.10, Ek=0.90, Qs=0.50, Qk=0.00, Kz=0.01, Kq=0.00, Sc=0.50, Sq=0.25, Sz=0.00, Zk=0.25, Zs=0.05, Cy=0.50, Cs=0.25, Ym=0.50, Yc=0.25, Omega=0)
+paramA <- c(Eq=1.00, Qs=0.03, Qk=0.00, Kz=0.00, Kq=0.00, Sc=0.22, Sq=0.00, Sz=0.00, Zk=0.00, Zs=0.00, Cy=0.22, Cs=0.00, Ym=0.25, Yc=0.00, Omega=0)
+paramW <- c(Eq=1.00, Qs=0.03, Qk=0.00, Kz=0.00, Kq=0.00, Sc=0.50, Sq=0.25, Sz=0.00, Zk=0.00, Zs=0.00, Cy=0.50, Cs=0.25, Ym=0.50, Yc=0.25, Omega=0)
+paramS <- c(Eq=0.10, Qs=0.50, Qk=0.00, Kz=0.01, Kq=0.00, Sc=0.22, Sq=0.00, Sz=0.00, Zk=0.00, Zs=0.05, Cy=0.22, Cs=0.00, Ym=0.25, Yc=0.00, Omega=0)
+paramF <- c(Eq=0.10, Qs=0.50, Qk=0.00, Kz=0.01, Kq=0.00, Sc=0.50, Sq=0.25, Sz=0.00, Zk=0.25, Zs=0.05, Cy=0.50, Cs=0.25, Ym=0.50, Yc=0.25, Omega=0)
 # Initial states of compartments
 state <- c(E=100000, Q=0, K=0, S=0, Z=0, C=0, Y=0, M=0, T=0)
 # Timespan for simulation
@@ -38,9 +38,9 @@ timeb <- 5
 regr <- function(t, state, parameters){
   with(as.list(c(state, parameters)), {
    # rates of change
-   dE <- - (Eq + Ek)*E
+   dE <- - E
    dQ <- + Eq*E + Sq*S + Kq*K - (Qs + Qk + Omega)*Q
-   dK <- + Ek*E + Zk*Z + Qk*Q - (Kz + Kq + Omega)*K
+   dK <- + (1 - Eq)*E + Zk*Z + Qk*Q - (Kz + Kq + Omega)*K
    dS <- + Qs*Q + Cs*C + Zs*Z - (Sc + Sq + Sz + Omega)*S
    dZ <- + Kz*K + Sz*S - (Zk + Zs + Omega)*Z
    dC <- + Sc*S + Yc*Y - (Cs + Cy + Omega)*C
@@ -105,7 +105,7 @@ torn <- function(t, tb, tc, state, fxn, parameters){
   stateb <- burn(tb = tb, state = state, fxn = regr, parameters = parameters)
   out <- ode(y = stateb, times = t, func = fxn, parms = parameters);
   def <- out [tc + 1, "T"]
-    for (i in 1:16){
+    for (i in 1:15){
     # Increasing and decreasing each parameter in turn
     parametersM = parameters; parametersL = parameters
     parametersM[i] = parametersM[i] + 0.1*parametersM[i]; parametersL[i] = parametersL[i] - 0.1*parametersL[i]
