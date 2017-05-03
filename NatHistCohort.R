@@ -5,7 +5,7 @@
 #         ^     ^     ^     ^          #
 #      -> Q <-> S <-> C <-> Y -> M     # Q - Quiescent, S - Subclinical, C - Minimal (C+S-), Y - Disseminated (C+S+, symptomatic), M - Death (due to disease)
 #     /   ^     ^                      #
-#    E    |     |                      # E - Recently Infected, T - Cumulative incidence
+#    E    |     |                      # E - Recently Infected, T - Cumulative incidence (using initial disease-free population)
 #     \   v     v                      #
 #      -> K <-> Z                      # K - Quiescent (slow stream), Z- Subclinical (slow stream),
 #         v     v                      #
@@ -16,7 +16,7 @@ setwd("C:/Users/cfmcquaid/Simulations")
 
 #Next steps
 # 1. get the prop inc disease after 5 years to 5%
-###   How: play with Eq and Ek values, OR increase progression parameters
+###   How: play with Eq values, OR increase progression parameters
 # 2. achieve 1 + start higher and sharper decrease in early years
 ###   How: change initial states to more realistic point, based on what prev of disease would be at screening
 ###   Also increase progression rates, while decreasing proportion that goes into the fast pathway
@@ -33,7 +33,9 @@ state <- c(E=100000, Q=0, K=0, S=0, Z=0, C=0, Y=0, M=0, T=0)
 # Timespan for simulation
 times <- seq(0, 25, by = 1)
 # Timespan for burn
-timeb <- 5
+timeb <- 1
+# Timespan for tornado
+timet <- 5
 # ODE function
 regr <- function(t, state, parameters){
   with(as.list(c(state, parameters)), {
@@ -46,7 +48,7 @@ regr <- function(t, state, parameters){
    dC <- + Sc*S + Yc*Y - (Cs + Cy + Omega)*C
    dY <- + Cy*C -(Yc + Ym + Omega)*Y
    dM <- + Ym*Y
-   dT <- + Sc*S / (E + Q + K + S + Z + C + Y + M)
+   dT <- + Sc*S / sum(state[1:5])
    # return the rate of change
    list(c(dE, dQ, dK, dS, dZ, dC, dY, dM, dT))
   })
@@ -62,7 +64,7 @@ calc <- function(t, tb, state, fxn, parameters, source){
   stateb <- burn(tb = tb, state = state, fxn = regr, parameters = parameters)
   out <- ode(y = stateb, times = t, func = fxn, parms = parameters)
   out <- as.data.frame(out)
-  # Calculating incidence by subtracting the previous year's cumulative incidence from this year's
+  # Calculating incidence
   out$inc <- head(c(out$T,0) - c(0,out$T),-1)
   # Removing the first data point at time zero as we only sample after a year
   out <- out[-c(1), ]
@@ -85,38 +87,36 @@ out2 <- subset(out, source=='F' | source == 'S', select=time:source)
 #ggplot(out2[out2$variable %in% c("inc"), ], aes(time, value)) + geom_point(size=2) + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "free")
 
 # Fitting parameters and state: proportion of individuals disease or dead (due to TB) after Otime years, using parameter set Osource
-Osource <- "F"; Otime <- 5
-Osize <- out[which(out$source == Osource & out$variable %in% c("E", "Q", "S", "K", "Z",  "C", "Y", "M") & out$time == Otime), ]
-Oinc <- out[which(out$source == Osource & out$variable %in% c("T") & out$time == Otime), ]
+# Osource <- "F"; Otime <- 5
+# Osize <- out[which(out$source == Osource & out$variable %in% c("E", "Q", "S", "K", "Z",  "C", "Y", "M") & out$time == Otime), ]
+# Oinc <- out[which(out$source == Osource & out$variable %in% c("T") & out$time == Otime), ]
 # Point prevalence: total incidence excluding those that may have regressed
-Pp <- sum(Osize$value[Osize$variable %in% c("C", "Y", "M")]) / sum(Osize$value)
+# Pp <- sum(Osize$value[Osize$variable %in% c("C", "Y", "M")]) / sum(Osize$value)
 # Cumulative incidence: total incidence including those that may have regressed
-Ci <- Oinc$value
+# Ci <- Oinc$value
 
-Pp
-Ci
 
 # Tornado plot
-torn <- function(t, tb, tc, state, fxn, parameters){
+torn <- function(t, tb, tt, state, fxn, parameters){
   # Store data
   data <- rbind(parameters, parameters)
-  rownames(data) <- c('+10%', '-10%')   
+  rownames(data) <- c('+20%', '-20%')   
   # Compare to default data set
   stateb <- burn(tb = tb, state = state, fxn = regr, parameters = parameters)
   out <- ode(y = stateb, times = t, func = fxn, parms = parameters);
-  def <- out [tc + 1, "T"]
+  def <- out [tt + 1, "T"]
     for (i in 1:15){
     # Increasing and decreasing each parameter in turn
     parametersM = parameters; parametersL = parameters
-    parametersM[i] = parametersM[i] + 0.1*parametersM[i]; parametersL[i] = parametersL[i] - 0.1*parametersL[i]
+    parametersM[i] = parametersM[i] + 0.2*parametersM[i]; parametersL[i] = parametersL[i] - 0.2*parametersL[i]
     stateM <- burn(tb = tb, state = state, fxn = regr, parameters = parametersM);stateL <- burn(tb = tb, state = state, fxn = regr, parameters = parametersL)
     outM <- ode(y = stateM, times = t, func = fxn, parms = parametersM); outL <- ode(y = stateL, times = t, func = fxn, parms = parametersL)
-    outM <- def - outM [tc + 1, "T"]; outL <- def - outL [tc + 1, "T"]
+    outM <- def - outM [tt + 1, "T"]; outL <- def - outL [tt + 1, "T"]
     data[1, i] <- outM; data[2, i] <- outL; 
   }
   return(data)
 }
-data <- torn(t = times, tb = timeb, tc = Otime, state = state, fxn = regr, parameters = paramF)
+data <- torn(t = times, tb = timeb, tt = timet, state = state, fxn = regr, parameters = paramF)
 # For plotting '%' on x-axis
 x <- seq(-0.01,0.01, length=10)
 ORD = order(abs(data[2,] - data[1,]))
