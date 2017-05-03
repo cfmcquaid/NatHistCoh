@@ -60,12 +60,14 @@ burn <- function(tb, state, fxn, parameters){
   return(stateb)
 }
 # Calculation function
-calc <- function(t, tb, state, fxn, parameters, source){
+calc <- function(ts, tb, state, fxn, parameters, source){
   stateb <- burn(tb = tb, state = state, fxn = regr, parameters = parameters)
-  out <- ode(y = stateb, times = t, func = fxn, parms = parameters)
+  out <- ode(y = stateb, times = ts, func = fxn, parms = parameters)
   out <- as.data.frame(out)
   # Calculating incidence
-  out$inc <- head(c(out$T,0) - c(0,out$T),-1)
+  out$inc <- parameters["Sc"]*out$S / (out$E + out$Q + out$S + out$K + out$Z)
+  # Calculating point prevalence
+  out$prev <- (out$C + out$Y) / (out$E + out$Q + out$S + out$K + out$Z + out$C + out$Y)
   # Removing the first data point at time zero as we only sample after a year
   out <- out[-c(1), ]
   # Formatting the data for plotting - putting into a melted data.fame, with additional columns for the source matrix
@@ -73,10 +75,10 @@ calc <- function(t, tb, state, fxn, parameters, source){
   out$source <- source
   return(out)
 }
-outA <- calc(t = times, tb = timeb, state = state, fxn = regr, parameters = paramA, source = "A")
-outW <- calc(t = times, tb = timeb, state = state, fxn = regr, parameters = paramW, source = "W")
-outS <- calc(t = times, tb = timeb, state = state, fxn = regr, parameters = paramS, source = "S")
-outF <- calc(t = times, tb = timeb, state = state, fxn = regr, parameters = paramF, source = "F")
+outA <- calc(ts = times, tb = timeb, state = state, fxn = regr, parameters = paramA, source = "A")
+outW <- calc(ts = times, tb = timeb, state = state, fxn = regr, parameters = paramW, source = "W")
+outS <- calc(ts = times, tb = timeb, state = state, fxn = regr, parameters = paramS, source = "S")
+outF <- calc(ts = times, tb = timeb, state = state, fxn = regr, parameters = paramF, source = "F")
 out <- rbind(outA, outW, outS, outF)
 # Plot output
 theme_set(theme_bw())
@@ -86,37 +88,31 @@ ggplot(out[out$variable %in% c("inc"), ], aes(time, value)) + geom_point(size=2)
 out2 <- subset(out, source=='F' | source == 'S', select=time:source)  
 #ggplot(out2[out2$variable %in% c("inc"), ], aes(time, value)) + geom_point(size=2) + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "free")
 
-# Fitting parameters and state: proportion of individuals disease or dead (due to TB) after Otime years, using parameter set Osource
-# Osource <- "F"; Otime <- 5
-# Osize <- out[which(out$source == Osource & out$variable %in% c("E", "Q", "S", "K", "Z",  "C", "Y", "M") & out$time == Otime), ]
-# Oinc <- out[which(out$source == Osource & out$variable %in% c("T") & out$time == Otime), ]
-# Point prevalence: total incidence excluding those that may have regressed
-# Pp <- sum(Osize$value[Osize$variable %in% c("C", "Y", "M")]) / sum(Osize$value)
-# Cumulative incidence: total incidence including those that may have regressed
-# Ci <- Oinc$value
-
+# Fitting parameters and state: proportion of individuals diseased after "Otime" years, using parameter set "Osource"
+Osource <- "F"; Otime <- 5
+Ci <- out[which(out$source == Osource & out$variable == "T" & out$time == Otime), ]
+In <- out[which(out$source == Osource & out$variable == "inc" & out$time == Otime), ]
+Pp <- out[which(out$source == Osource & out$variable == "prev" & out$time == Otime), ]
 
 # Tornado plot
-torn <- function(t, tb, tt, state, fxn, parameters){
+torn <- function(ts, tb, tt, state, fxn, parameters, source){
   # Store data
   data <- rbind(parameters, parameters)
   rownames(data) <- c('+20%', '-20%')   
   # Compare to default data set
-  stateb <- burn(tb = tb, state = state, fxn = regr, parameters = parameters)
-  out <- ode(y = stateb, times = t, func = fxn, parms = parameters);
-  def <- out [tt + 1, "T"]
-    for (i in 1:15){
+  out <- calc(ts = ts, tb = tb, state = state, fxn = regr, parameters = parameters, source = source)
+  def <- out[which(out$time ==tt & out$variable == "prev"),"value"]
+  for (i in 1:15){
     # Increasing and decreasing each parameter in turn
     parametersM = parameters; parametersL = parameters
     parametersM[i] = parametersM[i] + 0.2*parametersM[i]; parametersL[i] = parametersL[i] - 0.2*parametersL[i]
-    stateM <- burn(tb = tb, state = state, fxn = regr, parameters = parametersM);stateL <- burn(tb = tb, state = state, fxn = regr, parameters = parametersL)
-    outM <- ode(y = stateM, times = t, func = fxn, parms = parametersM); outL <- ode(y = stateL, times = t, func = fxn, parms = parametersL)
-    outM <- def - outM [tt + 1, "T"]; outL <- def - outL [tt + 1, "T"]
-    data[1, i] <- outM; data[2, i] <- outL; 
+    outM <- calc(ts = ts, tb = tb, state = state, fxn = regr, parameters = parametersM, source = source); outL <- calc(ts = ts, tb = tb, state = state, fxn = regr, parameters = parametersL, source = source)
+    outM <- def - outM[which(out$time ==tt & out$variable == "prev"),"value"]; outL <- def - outL[which(out$time ==tt & out$variable == "prev"),"value"]
+    data[1, i] <- outM; data[2, i] <- outL
   }
   return(data)
 }
-data <- torn(t = times, tb = timeb, tt = timet, state = state, fxn = regr, parameters = paramF)
+data <- torn(ts = times, tb = timeb, tt = timet, state = state, fxn = regr, parameters = paramF, source = F)
 # For plotting '%' on x-axis
 x <- seq(-0.01,0.01, length=10)
 ORD = order(abs(data[2,] - data[1,]))
