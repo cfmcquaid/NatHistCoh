@@ -31,9 +31,9 @@ paramF <- c(Eq=0.10, Qs=0.50, Qk=0.00, Kz=0.01, Kq=0.00, Sc=0.50, Sq=0.25, Sz=0.
 # Initial states of compartments
 state <- c(E=100000, Q=0, K=0, S=0, Z=0, C=0, Y=0, M=0, T=0)
 # Timespan for simulation
-times <- seq(0, 25, by = 1)
+times <- seq(0, 10, by = 1)
 # Timespan for burn
-timeb <- 1
+timeb <- 2
 # Timespan for tornado
 timet <- 5
 # ODE function
@@ -66,6 +66,9 @@ calc <- function(ts, tb, state, fxn, parameters, source){
   out <- as.data.frame(out)
   # Calculating incidence
   out$inc <- parameters["Sc"]*out$S / (out$E + out$Q + out$S + out$K + out$Z)
+  # Calculating incidence rate (https://en.wikipedia.org/wiki/Incidence_(epidemiology)), proportion of population that result in cases per year
+  # (total # cases incl mort) / {[(C+Y)_t1-(C+Y)_t0]*(t1+t0)/2 + t1*(E+Q+S+K+Z)_t1}
+  out$rate <- (out$C + out$Y + out$M) / (head(c(out$C,0) + c(out$Y,0) - c(0,out$C) - c(0,out$Y), -1)*head(c(out$time,0) - c(0,out$time), -1) / 2 + (out$E + out$Q + out$S + out$K + out$Z)*out$time)
   # Calculating point prevalence
   out$prev <- (out$C + out$Y) / (out$E + out$Q + out$S + out$K + out$Z + out$C + out$Y)
   # Removing the first data point at time zero as we only sample after a year
@@ -92,30 +95,31 @@ out2 <- subset(out, source=='F' | source == 'S', select=time:source)
 Osource <- "F"; Otime <- 5
 Ci <- out[which(out$source == Osource & out$variable == "T" & out$time == Otime), ]
 In <- out[which(out$source == Osource & out$variable == "inc" & out$time == Otime), ]
+Ra <- out[which(out$source == Osource & out$variable == "rate" & out$time == Otime), ]
 Pp <- out[which(out$source == Osource & out$variable == "prev" & out$time == Otime), ]
 
-# Tornado plot
-torn <- function(ts, tb, tt, state, fxn, parameters, source){
-  # Store data
-  data <- rbind(parameters, parameters)
-  rownames(data) <- c('+1%', '-1%')   
-  # Compare to default data set
-  out <- calc(ts = ts, tb = tb, state = state, fxn = regr, parameters = parameters, source = source)
-  def <- out[which(out$time ==tt & out$variable == "prev"),"value"]
-  for (i in 1:15){
-    # Increasing and decreasing each parameter in turn
-    parametersM = parameters; parametersL = parameters
-    parametersM[i] = parametersM[i] + 0.01*parametersM[i]; parametersL[i] = parametersL[i] - 0.01*parametersL[i]
-    outM <- calc(ts = ts, tb = tb, state = state, fxn = regr, parameters = parametersM, source = source); outL <- calc(ts = ts, tb = tb, state = state, fxn = regr, parameters = parametersL, source = source)
-    outM <- (outM[which(outM$time ==tt & outM$variable == "prev"),"value"] - def) / def; outL <- (outL[which(outL$time ==tt & outL$variable == "prev"),"value"] - def) / def
-    data[1, i] <- outM; data[2, i] <- outL
-  }
-  return(data)
-}
-data <- torn(ts = times, tb = timeb, tt = timet, state = state, fxn = regr, parameters = paramF, source ="F")
-# For plotting '%' on x-axis
-x <- seq(-0.01,0.01, length=10)
-ORD = order(abs(data[2,] - data[1,]))
-barplot(data[1,ORD], horiz = T, las=1, xlim = c(-0.01,0.01), xaxt='n', ylab = '', beside=T, col=c('black'))
-barplot(data[2,ORD], horiz = T, las=1, xlim = c(-0.01,0.01), xaxt='n', ylab = '', beside=T, col=c('white'), add = TRUE)
-axis(1, at=pretty(x), lab=paste0(pretty(x) * 100," %"), las=TRUE)
+# # Tornado plot
+# torn <- function(ts, tb, tt, state, fxn, parameters, source){
+#   # Store data
+#   data <- rbind(parameters, parameters)
+#   rownames(data) <- c('+1%', '-1%')   
+#   # Compare to default data set
+#   out <- calc(ts = ts, tb = tb, state = state, fxn = regr, parameters = parameters, source = source)
+#   def <- out[which(out$time ==tt & out$variable == "prev"),"value"]
+#   for (i in 1:15){
+#     # Increasing and decreasing each parameter in turn
+#     parametersM = parameters; parametersL = parameters
+#     parametersM[i] = parametersM[i] + 0.01*parametersM[i]; parametersL[i] = parametersL[i] - 0.01*parametersL[i]
+#     outM <- calc(ts = ts, tb = tb, state = state, fxn = regr, parameters = parametersM, source = source); outL <- calc(ts = ts, tb = tb, state = state, fxn = regr, parameters = parametersL, source = source)
+#     outM <- (outM[which(outM$time ==tt & outM$variable == "prev"),"value"] - def) / def; outL <- (outL[which(outL$time ==tt & outL$variable == "prev"),"value"] - def) / def
+#     data[1, i] <- outM; data[2, i] <- outL
+#   }
+#   return(data)
+# }
+# data <- torn(ts = times, tb = timeb, tt = timet, state = state, fxn = regr, parameters = paramF, source ="F")
+# # For plotting '%' on x-axis
+# x <- seq(-0.01,0.01, length=10)
+# ORD = order(abs(data[2,] - data[1,]))
+# barplot(data[1,ORD], horiz = T, las=1, xlim = c(-0.01,0.01), xaxt='n', ylab = '', beside=T, col=c('black'))
+# barplot(data[2,ORD], horiz = T, las=1, xlim = c(-0.01,0.01), xaxt='n', ylab = '', beside=T, col=c('white'), add = TRUE)
+# axis(1, at=pretty(x), lab=paste0(pretty(x) * 100," %"), las=TRUE)
