@@ -98,21 +98,21 @@ Pp <- out[which(out$source == Osource & out$variable == "prev" & out$time == Oti
 torn <- function(ts, tb, tt, state, fxn, parameters, source){
   # Store data
   data <- rbind(parameters, parameters)
-  rownames(data) <- c('+20%', '-20%')   
+  rownames(data) <- c('+1%', '-1%')   
   # Compare to default data set
   out <- calc(ts = ts, tb = tb, state = state, fxn = regr, parameters = parameters, source = source)
   def <- out[which(out$time ==tt & out$variable == "prev"),"value"]
   for (i in 1:15){
     # Increasing and decreasing each parameter in turn
     parametersM = parameters; parametersL = parameters
-    parametersM[i] = parametersM[i] + 0.2*parametersM[i]; parametersL[i] = parametersL[i] - 0.2*parametersL[i]
+    parametersM[i] = parametersM[i] + 0.01*parametersM[i]; parametersL[i] = parametersL[i] - 0.01*parametersL[i]
     outM <- calc(ts = ts, tb = tb, state = state, fxn = regr, parameters = parametersM, source = source); outL <- calc(ts = ts, tb = tb, state = state, fxn = regr, parameters = parametersL, source = source)
-    outM <- def - outM[which(out$time ==tt & out$variable == "prev"),"value"]; outL <- def - outL[which(out$time ==tt & out$variable == "prev"),"value"]
+    outM <- (outM[which(outM$time ==tt & outM$variable == "prev"),"value"] - def) / def; outL <- (outL[which(outL$time ==tt & outL$variable == "prev"),"value"] - def) / def
     data[1, i] <- outM; data[2, i] <- outL
   }
   return(data)
 }
-data <- torn(ts = times, tb = timeb, tt = timet, state = state, fxn = regr, parameters = paramF, source = F)
+data <- torn(ts = times, tb = timeb, tt = timet, state = state, fxn = regr, parameters = paramF, source ="F")
 # For plotting '%' on x-axis
 x <- seq(-0.01,0.01, length=10)
 ORD = order(abs(data[2,] - data[1,]))
