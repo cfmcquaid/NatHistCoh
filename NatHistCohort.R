@@ -66,9 +66,14 @@ calc <- function(ts, tb, state, fxn, parameters, source){
   out <- as.data.frame(out)
   # Calculating incidence
   out$inc <- parameters["Sc"]*out$S / (out$E + out$Q + out$S + out$K + out$Z)
-  # Calculating incidence rate (https://en.wikipedia.org/wiki/Incidence_(epidemiology)), proportion of population that result in cases per year
-  # (total # cases incl mort) / {[(C+Y)_t1-(C+Y)_t0]*(t1+t0)/2 + t1*(E+Q+S+K+Z)_t1}
+  # Calculating incidence rate (https://en.wikipedia.org/wiki/Incidence_(epidemiology)), proportion of population that result in cases per year = (total # cases incl mort) / {[(C+Y)_t1-(C+Y)_t0]*(t1+t0)/2 + t1*(E+Q+S+K+Z)_t1}
   out$rate <- (out$C + out$Y + out$M) / (head(c(out$C,0) + c(out$Y,0) - c(0,out$C) - c(0,out$Y), -1)*head(c(out$time,0) - c(0,out$time), -1) / 2 + (out$E + out$Q + out$S + out$K + out$Z)*out$time)
+  # Calculating the "relative risk" (see Vynnycky & Fine, 1997)
+  # out$risk <- head(c(out$C,0) + c(out$Y,0) - c(0,out$C) - c(0,out$Y), -1)/(out$C[2] + out$Y[2])
+  out$risk <- parameters["Sc"]*out$S/(parameters["Sc"]*out$S[1])
+  # Calculating the "interval from conversion" (see Styblo 1991 & TSRU progress report 1967)
+  # out$int <- 100*head(c(out$C,0) + c(out$Y,0) - c(0,out$C) - c(0,out$Y), -1)/sum(head(c(out$C,0) + c(out$Y,0) - c(0,out$C) - c(0,out$Y), -1))
+  out$int <- parameters["Sc"]*out$S/sum(parameters["Sc"]*out$S)
   # Calculating point prevalence
   out$prev <- (out$C + out$Y) / (out$E + out$Q + out$S + out$K + out$Z + out$C + out$Y)
   # Removing the first data point at time zero as we only sample after a year
@@ -86,7 +91,7 @@ out <- rbind(outA, outW, outS, outF)
 # Plot output
 theme_set(theme_bw())
 ##all scenarios
-ggplot(out[out$variable %in% c("inc"), ], aes(time, value)) + geom_point(size=2) + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "free")
+ggplot(out[out$variable %in% c("risk"), ], aes(time, value)) + geom_point(size=2) + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "free")
 ##slow and slow+regression only (S+F)
 out2 <- subset(out, source=='F' | source == 'S', select=time:source)  
 #ggplot(out2[out2$variable %in% c("inc"), ], aes(time, value)) + geom_point(size=2) + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "free")
@@ -94,9 +99,11 @@ out2 <- subset(out, source=='F' | source == 'S', select=time:source)
 # Fitting parameters and state: proportion of individuals diseased after "Otime" years, using parameter set "Osource"
 Osource <- "F"; Otime <- 5
 Ci <- out[which(out$source == Osource & out$variable == "T" & out$time == Otime), ]
-In <- out[which(out$source == Osource & out$variable == "inc" & out$time == Otime), ]
+Ic <- out[which(out$source == Osource & out$variable == "inc" & out$time == Otime), ]
 Ra <- out[which(out$source == Osource & out$variable == "rate" & out$time == Otime), ]
 Pp <- out[which(out$source == Osource & out$variable == "prev" & out$time == Otime), ]
+Rr <- out[which(out$source == Osource & out$variable == "risk" & out$time == Otime), ]
+Iv <- out[which(out$source == Osource & out$variable == "int" & out$time == Otime), ]
 
 # # Tornado plot
 # torn <- function(ts, tb, tt, state, fxn, parameters, source){
