@@ -14,6 +14,10 @@
 #setwd("C:/Users/cfmcquaid/Simulations")
 setwd("/Users/ReinHouben/Filr/ifolder/Applications (funding and jobs)/2016 - ERC starting grant/Rmodel_nathis/NatHistCoh")
 
+### URL for how to upload changes: http://r-bio.github.io/intro-git-rstudio/
+### to pull in Finn's version - type in shell: git pull upstream master
+### to push my version - create pull request to Finn:  
+
 #Next steps
 # 1. get the prop inc disease after 5 years to 5%
 ###   How: play with Eq values, OR increase progression parameters
