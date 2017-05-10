@@ -20,6 +20,7 @@ setwd("/Users/ReinHouben/Filr/ifolder/Applications (funding and jobs)/2016 - ERC
 #       commit (remember to tick box), then push
 #       goto Github, pull requests, create pull request, if merge can be done on auto, just complete
 #       Alternatively Finn complete pull request (he does not get email notification)
+# Finn to just click push. Job done
 
 #Next steps
 # 1. get the prop inc disease after 5 years to 5%
