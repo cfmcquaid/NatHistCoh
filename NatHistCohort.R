@@ -17,6 +17,9 @@ setwd("/Users/ReinHouben/Filr/ifolder/Applications (funding and jobs)/2016 - ERC
 ### URL for how to upload changes: http://r-bio.github.io/intro-git-rstudio/
 ### to pull in Finn's version - type in shell: git pull upstream master
 ### to push my version - create pull request to Finn:  
+#       commit (remember to tick box), then push
+#       goto Github, pull requests, create pull request
+#       then Finn complete pull request (he does not get email notification)
 
 #Next steps
 # 1. get the prop inc disease after 5 years to 5%
