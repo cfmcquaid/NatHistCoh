@@ -11,8 +11,8 @@
 #         v     v                      #
 ########################################
 ##set wd depending on who is coding/playing
-setwd("C:/Users/cfmcquaid/Simulations")
-#setwd("/Users/ReinHouben/Filr/ifolder/Applications (funding and jobs)/2016 - ERC starting grant/Rmodel_nathis/NatHistCoh")
+#setwd("C:/Users/cfmcquaid/Simulations")
+setwd("/Users/ReinHouben/Filr/ifolder/Applications (funding and jobs)/2016 - ERC starting grant/Rmodel_nathis/NatHistCoh")
 
 #Next steps
 # 1. get the prop inc disease after 5 years to 5%
@@ -20,6 +20,9 @@ setwd("C:/Users/cfmcquaid/Simulations")
 # 2. achieve 1 + start higher and sharper decrease in early years
 ###   How: change initial states to more realistic point, based on what prev of disease would be at screening
 ###   Also increase progression rates, while decreasing proportion that goes into the fast pathway
+# OTHER NEXT STEPS - 8th May 2017
+##  ?can we calculate in model how often (on average) people would come in and out of states over course of say 2 years?
+##  ?Can we calculate average time in compartment in each step visit? Should be simple competing risk model right?
 
 library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr");
 # Parameter sets: Average (), Wax (regression), Slow (slow), Full (regression, slow)
@@ -106,6 +109,7 @@ Rr <- out[which(out$source == Osource & out$variable == "risk" & out$time == Oti
 Iv <- out[which(out$source == Osource & out$variable == "int" & out$time == Otime), ]
 
 # # Tornado plot
+# range <- 0.01 ##sets range for the change in the parameters
 # torn <- function(ts, tb, tt, state, fxn, parameters, source){
 #   # Store data
 #   data <- rbind(parameters, parameters)
@@ -116,7 +120,7 @@ Iv <- out[which(out$source == Osource & out$variable == "int" & out$time == Otim
 #   for (i in 1:15){
 #     # Increasing and decreasing each parameter in turn
 #     parametersM = parameters; parametersL = parameters
-#     parametersM[i] = parametersM[i] + 0.01*parametersM[i]; parametersL[i] = parametersL[i] - 0.01*parametersL[i]
+#     parametersM[i] = parametersM[i] + range*parametersM[i]; parametersL[i] = parametersL[i] - range*parametersL[i]
 #     outM <- calc(ts = ts, tb = tb, state = state, fxn = regr, parameters = parametersM, source = source); outL <- calc(ts = ts, tb = tb, state = state, fxn = regr, parameters = parametersL, source = source)
 #     outM <- (outM[which(outM$time ==tt & outM$variable == "prev"),"value"] - def) / def; outL <- (outL[which(outL$time ==tt & outL$variable == "prev"),"value"] - def) / def
 #     data[1, i] <- outM; data[2, i] <- outL
@@ -127,6 +131,7 @@ Iv <- out[which(out$source == Osource & out$variable == "int" & out$time == Otim
 # # For plotting '%' on x-axis
 # x <- seq(-0.01,0.01, length=10)
 # ORD = order(abs(data[2,] - data[1,]))
+###order black = increase in parameter, white is decrease in parameter value
 # barplot(data[1,ORD], horiz = T, las=1, xlim = c(-0.01,0.01), xaxt='n', ylab = '', beside=T, col=c('black'))
 # barplot(data[2,ORD], horiz = T, las=1, xlim = c(-0.01,0.01), xaxt='n', ylab = '', beside=T, col=c('white'), add = TRUE)
 # axis(1, at=pretty(x), lab=paste0(pretty(x) * 100," %"), las=TRUE)
