@@ -37,12 +37,13 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr");
 # Ax - rate from compartment A to compartment X, Omega - background mortality
 
 
-# No regression: 1/Cy + 1/Ym = 3, Ym = 0.5 (0.3 death 0.2 self-cure), therefore Cy = 1. NOTE: 70% die, 30% self-cure
-#
+# No regression: 1/Cy + 1/Ym = 3 years, Ym = 0.5 (0.3 death 0.2 self-cure), therefore Cy = 1. NOTE: 70% die, 30% self-cure
+# Regression: 1/(Yc + Ym) = 0.5 years, Ym = 0.5 (as above), therefore Yc = 1.5.
+# Regression: 1/(Cy + Cs) = 0.5 years. Assume ratio 2:1 for Cy:Cs, therefore Cs = 2/3
 # paramA <- c(Eq=1.00, Qs=0.03, Qk=0.00, Kz=0.00, Kq=0.00, Sc=0.22, Sq=0.00, Sz=0.00, Zk=0.00, Zs=0.00, Cy=0.22, Cs=0.00, Ym=0.25, Yc=0.00, Omega=0)
 # paramW <- c(Eq=1.00, Qs=0.03, Qk=0.00, Kz=0.00, Kq=0.00, Sc=0.50, Sq=0.25, Sz=0.00, Zk=0.00, Zs=0.00, Cy=0.50, Cs=0.25, Ym=0.50, Yc=0.25, Omega=0)
 paramS <- c(Eq=0.10, Qs=0.50, Qk=0.00, Kz=0.01, Kq=0.00, Sc=0.22, Sq=0.00, Sz=0.00, Zk=0.00, Zs=0.05, Cy=1.00, Cs=0.00, Ym=0.50, Yc=0.00, Omega=0)
-paramF <- c(Eq=0.10, Qs=0.50, Qk=0.00, Kz=0.01, Kq=0.00, Sc=0.50, Sq=0.25, Sz=0.00, Zk=0.25, Zs=0.05, Cy=0.50, Cs=0.25, Ym=0.50, Yc=0.25, Omega=0)
+paramF <- c(Eq=0.10, Qs=0.50, Qk=0.00, Kz=0.01, Kq=0.00, Sc=0.50, Sq=0.25, Sz=0.00, Zk=0.25, Zs=0.05, Cy=1.32, Cs=0.66, Ym=0.50, Yc=1.50, Omega=0)
 # Initial states of compartments
 state <- c(E=100000, Q=0, K=0, S=0, Z=0, C=0, Y=0, M=0, T=0)
 # Timespan for simulation
