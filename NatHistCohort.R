@@ -42,8 +42,8 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr");
 # Regression: 1/(Cy + Cs) = 0.5 years. Assume ratio 2:1 for Cy:Cs, therefore Cs = 2/3
 # paramA <- c(Eq=1.00, Qs=0.03, Qk=0.00, Kz=0.00, Kq=0.00, Sc=0.22, Sq=0.00, Sz=0.00, Zk=0.00, Zs=0.00, Cy=0.22, Cs=0.00, Ym=0.25, Yc=0.00, Omega=0)
 # paramW <- c(Eq=1.00, Qs=0.03, Qk=0.00, Kz=0.00, Kq=0.00, Sc=0.50, Sq=0.25, Sz=0.00, Zk=0.00, Zs=0.00, Cy=0.50, Cs=0.25, Ym=0.50, Yc=0.25, Omega=0)
-paramS <- c(Eq=0.10, Qs=0.50, Qk=0.00, Kz=0.01, Kq=0.00, Sc=0.22, Sq=0.00, Sz=0.00, Zk=0.00, Zs=0.05, Cy=1.00, Cs=0.00, Ym=0.50, Yc=0.00, Omega=0)
-paramF <- c(Eq=0.10, Qs=0.50, Qk=0.00, Kz=0.01, Kq=0.00, Sc=0.50, Sq=0.25, Sz=0.00, Zk=0.25, Zs=0.05, Cy=1.32, Cs=0.66, Ym=0.50, Yc=1.50, Omega=0)
+paramS <- c(Eq=0.10, Qs=1.00, Qk=0.00, Kz=0.01, Kq=0.00, Sc=1.00, Sq=0.00, Sz=0.00, Zk=0.00, Zs=0.01, Cy=1.00, Cs=0.00, Ym=0.50, Yc=0.00, Omega=0)
+paramF <- c(Eq=0.10, Qs=1.00, Qk=0.00, Kz=0.01, Kq=0.00, Sc=1.00, Sq=0.25, Sz=0.00, Zk=0.05, Zs=0.01, Cy=1.32, Cs=0.66, Ym=0.50, Yc=1.50, Omega=0)
 # Initial states of compartments
 state <- c(E=100000, Q=0, K=0, S=0, Z=0, C=0, Y=0, M=0, T=0)
 # Timespan for simulation
@@ -105,11 +105,15 @@ calc <- function(ts, tb, state, fxn, parameters, source){
 # outW <- calc(ts = times, tb = timeb, state = state, fxn = regr, parameters = paramW, source = "W")
 outS <- calc(ts = times, tb = timeb, state = state, fxn = regr, parameters = paramS, source = "S")
 outF <- calc(ts = times, tb = timeb, state = state, fxn = regr, parameters = paramF, source = "F")
-out <- rbind(outS, outF)
+# Including the data for barplot
+time <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10); variable <- c("D", "D", "D", "D", "D", "D", "D", "D", "D", "D"); value <- c(0.58, 0.24, 0.08, 0.05, 0.01, 0.01, 0.02, 0.01, 0, 0); source <- c("D", "D", "D", "D", "D", "D", "D", "D", "D", "D")
+outD <- data.frame(time, variable, value, source)
+out <- rbind(outS, outF, outD)
 # Plot output
 theme_set(theme_bw())
 ##all scenarios
-ggplot(out[out$variable %in% c("int"), ], aes(time, value)) + geom_point(size=2) + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "fixed")
+# ggplot(out[out$variable %in% c("int"), ], aes(time, value)) + geom_point(size=2) + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "fixed")
+ggplot(out[out$variable %in% c("int"), ], aes(x = time, y = value, colour = source)) + geom_line(size=2) + labs(x = "Time", y = "Incidence") # + facet_grid(source ~ . , scales = "fixed")
 ##slow and slow+regression only (S+F)
 # out2 <- subset(out, source=='F' | source == 'S', select=time:source)  
 #ggplot(out2[out2$variable %in% c("inc"), ], aes(time, value)) + geom_point(size=2) + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "free")
