@@ -84,13 +84,14 @@ burn <- function(tb, state, fxn, parameters){
 # Calculation function
 calc <- function(ts, tb, ti, state, fxn, parameters, source){
   stateb <- burn(tb = tb, state = state, fxn = regr, parameters = parameters)
-  outi <- ode(y = stateb, times = seq(0, ti, by = 1), func = fxn, parms = parameters)
-  statei <- c(outi[ti, 2], outi[ti, 3], outi[ti, 4], outi[ti, 5], outi[ti, 6], outi[ti, 7], Y=0, outi[ti, 9]+outi[ti, 10], outi[ti, 10])
-  outi <- as.data.frame(outi)
-  out <- ode(y = statei, times = ts, func = fxn, parms = parameters)
+  # outi <- ode(y = stateb, times = seq(0, ti, by = 1), func = fxn, parms = parameters)
+  # statei <- c(outi[ti, 2], outi[ti, 3], outi[ti, 4], outi[ti, 5], outi[ti, 6], outi[ti, 7], Y=0, outi[ti, 9]+outi[ti, 10], outi[ti, 10])
+  # outi <- as.data.frame(outi)
+  # out <- ode(y = statei, times = ts, func = fxn, parms = parameters)
+  out <- ode(y = stateb, times = ts, func = fxn, parms = parameters)
   out <- as.data.frame(out)
-  out$time <- out$time+ti
-  out <- rbind(outi,out)
+  # out$time <- out$time+ti
+  # out <- rbind(outi,out)
   # Removing the first timestep, time zero
   out <- out[-1,]
   # Calculating the "interval from conversion" (see Styblo 1991 & TSRU progress report 1967)
@@ -111,7 +112,7 @@ out <- rbind(outS, outF, outD)
 theme_set(theme_bw())
 ##all scenarios
 # ggplot(out[out$variable %in% c("int"), ], aes(time, value)) + geom_point(size=2) + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "fixed")
-ggplot(out[out$variable %in% c("prev"), ], aes(x = time, y = value, colour = source)) + geom_bar(data=out[out$variable %in% c("D"), ], stat="identity") + geom_line(size=2) + labs(x = "Time", y = "Incidence") 
+ggplot(out[out$variable %in% c("int"), ], aes(x = time, y = value, colour = source)) + geom_bar(data=out[out$variable %in% c("D"), ], stat="identity") + geom_line(size=2) + labs(x = "Time", y = "Incidence") 
 # Fitting parameters and state: proportion of individuals diseased after "Otime" years, using parameter set "Osource"
 Osource <- "F"; Otime <- 5
 Iv <- out[which(out$source == Osource & out$variable == "int" & out$time == Otime), ]
