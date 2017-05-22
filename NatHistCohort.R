@@ -76,7 +76,7 @@ regr <- function(t, state, parameters){
 # Burn off the first X years to establish the proportion of individuals in each compartment, removing diseased
 burn <- function(tb, state, fxn, parameters){
   out <- ode(y = state, times = seq(0, tb, by = 1), func = fxn, parms = parameters)
-  stateb <- c(out[tb, 2], out[tb, 3], out[tb, 4], out[tb, 5], out[tb, 6], C=0, Y=0, M=0, T=0)
+  stateb <- c(out[tb, 2], out[tb, 3], out[tb, 4], out[tb, 5], out[tb, 6], out[tb, 7], Y=0, out[tb, 9], M=0)
   return(stateb)
 }
 # Calculation function
