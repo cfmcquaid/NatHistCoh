@@ -46,8 +46,8 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr");
 # No regression: 1/Cy + 1/Ym = 3 years, Ym = 0.5 (0.3 death 0.2 self-cure), therefore Cy = 1. NOTE: 70% die, 30% self-cure
 # Regression: 1/(Yc + Ym) = 0.5 years, Ym = 0.5 (as above), therefore Yc = 1.5.
 # Regression: 1/(Cy + Cs) = 0.5 years. Assume ratio 2:1 for Cy:Cs, therefore Cs = 2/3
-paramS <- c(Eq=0.10, Qs=1.00, Qz=0.00, Kz=0.01, Kr=0.10, Sc=1.00, Sq=0.00, Sz=0.00, Zk=0.00, Zs=0.00, Zq=0.01, Cy=1.00, Cs=0.00, Cm=0.05, Ym=0.50, Yc=0.00)
-paramF <- c(Eq=0.10, Qs=1.00, Qz=0.00, Kz=0.01, Kr=0.10, Sc=1.00, Sq=0.25, Sz=0.00, Zk=0.05, Zs=0.00, Zq=0.01, Cy=1.32, Cs=0.66, Cm=0.05, Ym=0.50, Yc=1.50)
+paramS <- c(Eq=0.10, Qs=2.00, Qz=0.00, Kz=0.01, Kr=0.10, Sc=2.00, Sq=0.00, Sz=0.00, Zk=0.00, Zs=0.00, Zq=0.01, Cy=1.00, Cs=0.00, Cm=0.05, Ym=0.50, Yc=0.00)
+paramF <- c(Eq=0.10, Qs=2.00, Qz=0.00, Kz=0.01, Kr=0.10, Sc=2.00, Sq=0.25, Sz=0.00, Zk=0.05, Zs=0.00, Zq=0.01, Cy=1.32, Cs=0.66, Cm=0.05, Ym=0.50, Yc=1.50)
 # Initial states of compartments
 state <- c(E=100000, Q=0, K=0, S=0, Z=0, C=0, Y=0, R=0, M=0)
 # Timespan for simulation
