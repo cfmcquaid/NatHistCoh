@@ -60,9 +60,9 @@ timet <- 5
 regr <- function(t, state, parameters){
   with(as.list(c(state, parameters)), {
    # rates of change
-   dE <- - E
-   dQ <- + Eq*E + Sq*S + Zq*Z - (Qs + Qz)*Q
-   dK <- + (1 - Eq)*E + Zk*Z - (Kz + Kr)*K
+   dE <- - 10*E
+   dQ <- + 10*Eq*E + Sq*S + Zq*Z - (Qs + Qz)*Q
+   dK <- + 10*(1 - Eq)*E + Zk*Z - (Kz + Kr)*K
    dS <- + Qs*Q + Cs*C + Zs*Z - (Sc + Sq + Sz)*S
    dZ <- + Kz*K + Sz*S + Qz*Q - (Zk + Zs + Zq)*Z
    dC <- + Sc*S + Yc*Y - (Cs + Cy + Cm)*C
