@@ -84,6 +84,8 @@ calc <- function(ts, tb, state, fxn, parameters, source){
   stateb <- burn(tb = tb, state = state, fxn = regr, parameters = parameters)
   out <- ode(y = stateb, times = ts, func = fxn, parms = parameters)
   out <- as.data.frame(out)
+  # Removing the first timestep, time zero
+  out <- out[-1,]
   # Calculating the "interval from conversion" (see Styblo 1991 & TSRU progress report 1967)
   out$int <- parameters["Cy"]*out$C/sum(parameters["Cy"]*out$C)
   # Formatting the data for plotting - putting into a melted data.fame, with additional columns for the source matrix
@@ -101,8 +103,7 @@ out <- rbind(outS, outF, outD)
 theme_set(theme_bw())
 ##all scenarios
 # ggplot(out[out$variable %in% c("int"), ], aes(time, value)) + geom_point(size=2) + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "fixed")
-ggplot(out[out$variable %in% c("int"), ], aes(x = time, y = value, colour = source)) + geom_line(size=2) + labs(x = "Time", y = "Incidence") # + facet_grid(source ~ . , scales = "fixed")
-
+ggplot(out[out$variable %in% c("int"), ], aes(x = time, y = value, colour = source)) + geom_bar(data=out[out$variable %in% c("D"), ], stat="identity") + geom_line(size=2) + labs(x = "Time", y = "Incidence") 
 # Fitting parameters and state: proportion of individuals diseased after "Otime" years, using parameter set "Osource"
 Osource <- "F"; Otime <- 5
 Iv <- out[which(out$source == Osource & out$variable == "int" & out$time == Otime), ]
