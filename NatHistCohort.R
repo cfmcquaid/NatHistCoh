@@ -47,7 +47,7 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr");
 # Regression: 1/(Yc + Ym) = 0.5 years, Ym = 0.5 (as above), therefore Yc = 1.5.
 # Regression: 1/(Cy + Cs) = 0.5 years. Assume ratio 2:1 for Cy:Cs, therefore Cs = 2/3
 paramS <- c(Eq=0.10, Qs=2.00, Qz=0.00, Kz=0.01, Kr=0.10, Sc=2.00, Sq=0.00, Sz=0.00, Zk=0.00, Zs=0.00, Zq=0.01, Cy=1.00, Cs=0.00, Cm=0.05, Ym=0.50, Yc=0.00)
-paramF <- c(Eq=0.10, Qs=2.00, Qz=0.00, Kz=0.01, Kr=0.10, Sc=2.00, Sq=0.25, Sz=0.00, Zk=0.01, Zs=0.00, Zq=0.01, Cy=1.32, Cs=0.066, Cm=0.05, Ym=0.50, Yc=0.150)
+paramF <- c(Eq=0.10, Qs=2.00, Qz=0.00, Kz=0.01, Kr=0.10, Sc=3.00, Sq=0.25, Sz=0.00, Zk=0.01, Zs=0.00, Zq=0.01, Cy=1.32, Cs=0.5, Cm=0.05, Ym=0.50, Yc=0.150)
 # Initial states of compartments
 state <- c(E=100000, Q=0, K=0, S=0, Z=0, C=0, Y=0, R=0, M=0)
 # Timespan for simulation
@@ -88,6 +88,7 @@ calc <- function(ts, tb, state, fxn, parameters, source){
   out <- out[-1,]
   # Calculating the "interval from conversion" (see Styblo 1991 & TSRU progress report 1967)
   out$int <- parameters["Cy"]*out$C/sum(parameters["Cy"]*out$C)
+  out$prev <- out$Y+out$C
   # Formatting the data for plotting - putting into a melted data.fame, with additional columns for the source matrix
   out <- melt(out, id.vars = c("time"))
   out$source <- source
@@ -108,30 +109,30 @@ ggplot(out[out$variable %in% c("int"), ], aes(x = time, y = value, colour = sour
 Osource <- "F"; Otime <- 5
 Iv <- out[which(out$source == Osource & out$variable == "int" & out$time == Otime), ]
 
-# # Tornado plot
-range <- 0.01 ##sets range for the change in the parameters
-torn <- function(ts, tb, tt, state, fxn, parameters, source){
-  # Store data
-  data <- rbind(parameters, parameters)
-  rownames(data) <- c('+1%', '-1%')
-  # Compare to default data set
-  out <- calc(ts = ts, tb = tb, state = state, fxn = regr, parameters = parameters, source = source)
-  def <- out[which(out$time ==tt & out$variable == "int"),"value"]
-  for (i in 1:16){
-    # Increasing and decreasing each parameter in turn
-    parametersM = parameters; parametersL = parameters
-    parametersM[i] = parametersM[i] + range*parametersM[i]; parametersL[i] = parametersL[i] - range*parametersL[i]
-    outM <- calc(ts = ts, tb = tb, state = state, fxn = regr, parameters = parametersM, source = source); outL <- calc(ts = ts, tb = tb, state = state, fxn = regr, parameters = parametersL, source = source)
-    outM <- (outM[which(outM$time ==tt & outM$variable == "int"),"value"] - def) / def; outL <- (outL[which(outL$time ==tt & outL$variable == "int"),"value"] - def) / def
-    data[1, i] <- outM; data[2, i] <- outL
-  }
-  return(data)
-}
-data <- torn(ts = times, tb = timeb, tt = timet, state = state, fxn = regr, parameters = paramF, source ="F")
-# For plotting '%' on x-axis
-x <- seq(-0.01,0.01, length=10)
-ORD = order(abs(data[2,] - data[1,]))
-##order black = increase in parameter, white is decrease in parameter value
-barplot(data[1,ORD], horiz = T, las=1, xlim = c(-0.01,0.01), xaxt='n', ylab = '', beside=T, col=c('black'))
-barplot(data[2,ORD], horiz = T, las=1, xlim = c(-0.01,0.01), xaxt='n', ylab = '', beside=T, col=c('white'), add = TRUE)
-axis(1, at=pretty(x), lab=paste0(pretty(x) * 100," %"), las=TRUE)
+# # # Tornado plot
+# range <- 0.01 ##sets range for the change in the parameters
+# torn <- function(ts, tb, tt, state, fxn, parameters, source){
+#   # Store data
+#   data <- rbind(parameters, parameters)
+#   rownames(data) <- c('+1%', '-1%')
+#   # Compare to default data set
+#   out <- calc(ts = ts, tb = tb, state = state, fxn = regr, parameters = parameters, source = source)
+#   def <- out[which(out$time ==tt & out$variable == "int"),"value"]
+#   for (i in 1:16){
+#     # Increasing and decreasing each parameter in turn
+#     parametersM = parameters; parametersL = parameters
+#     parametersM[i] = parametersM[i] + range*parametersM[i]; parametersL[i] = parametersL[i] - range*parametersL[i]
+#     outM <- calc(ts = ts, tb = tb, state = state, fxn = regr, parameters = parametersM, source = source); outL <- calc(ts = ts, tb = tb, state = state, fxn = regr, parameters = parametersL, source = source)
+#     outM <- (outM[which(outM$time ==tt & outM$variable == "int"),"value"] - def) / def; outL <- (outL[which(outL$time ==tt & outL$variable == "int"),"value"] - def) / def
+#     data[1, i] <- outM; data[2, i] <- outL
+#   }
+#   return(data)
+# }
+# data <- torn(ts = times, tb = timeb, tt = timet, state = state, fxn = regr, parameters = paramF, source ="F")
+# # For plotting '%' on x-axis
+# x <- seq(-0.01,0.01, length=10)
+# ORD = order(abs(data[2,] - data[1,]))
+# ##order black = increase in parameter, white is decrease in parameter value
+# barplot(data[1,ORD], horiz = T, las=1, xlim = c(-0.01,0.01), xaxt='n', ylab = '', beside=T, col=c('black'))
+# barplot(data[2,ORD], horiz = T, las=1, xlim = c(-0.01,0.01), xaxt='n', ylab = '', beside=T, col=c('white'), add = TRUE)
+# axis(1, at=pretty(x), lab=paste0(pretty(x) * 100," %"), las=TRUE)
