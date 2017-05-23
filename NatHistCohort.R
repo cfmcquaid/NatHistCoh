@@ -46,8 +46,8 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr");
 # No regression: 1/Cy + 1/Ym = 3 years, Ym = 0.5 (0.3 death 0.2 self-cure), therefore Cy = 1. NOTE: 70% die, 30% self-cure
 # Regression: 1/(Yc + Ym) = 0.5 years, Ym = 0.5 (as above), therefore Yc = 1.5.
 # Regression: 1/(Cy + Cs) = 0.5 years. Assume ratio 2:1 for Cy:Cs, therefore Cs = 2/3
-paramS <- c(Eq=0.10, Qs=2.00, Qz=0.00, Kz=0.01, Kr=0.10, Sc=2.00, Sq=0.00, Sz=0.00, Zk=0.00, Zs=0.00, Zq=0.01, Cy=1.00, Cs=0.00, Cm=0.05, Ym=0.50, Yc=0.00)
-paramF <- c(Eq=0.10, Qs=2.00, Qz=0.00, Kz=0.01, Kr=0.10, Sc=3.00, Sq=0.25, Sz=0.00, Zk=0.01, Zs=0.00, Zq=0.01, Cy=1.32, Cs=0.5, Cm=0.05, Ym=0.50, Yc=0.150)
+paramS <- c(Eq=0.10, Qs=1.50, Qz=0.00, Kz=0.01, Kr=0.10, Sc=1.00, Sq=0.00, Sz=0.00, Zk=0.00, Zs=0.00, Zq=0.01, Cy=1.00, Cs=0.00, Cm=0.10, Ym=0.50, Yc=0.00)
+paramF <- c(Eq=0.10, Qs=2.50, Qz=0.00, Kz=0.02, Kr=0.10, Sc=2.00, Sq=1.00, Sz=0.01, Zk=0.01, Zs=0.00, Zq=0.02, Cy=2.00, Cs=1.00, Cm=0.10, Ym=0.60, Yc=0.10)
 # Initial states of compartments
 state <- c(E=100000, Q=0, K=0, S=0, Z=0, C=0, Y=0, R=0, M=0)
 # Timespan for simulation
@@ -79,7 +79,7 @@ regr <- function(t, state, parameters){
 burn <- function(tb, state, fxn, parameters){
   if (tb>0){
   out <- ode(y = state, times = seq(0, tb, by = 1), func = fxn, parms = parameters)
-  stateb <- c(out[tb, 2], out[tb, 3], out[tb, 4], out[tb, 5], out[tb, 6], out[tb, 7], Y=0, out[tb, 9], M=0)}
+  stateb <- c(out[tb+1, 2], out[tb+1, 3], out[tb+1, 4], out[tb+1, 5], out[tb+1, 6], out[tb+1, 7], Y=0, out[tb+1, 9], M=0)}
   else{stateb <- state}
   return(stateb)
 }
@@ -87,7 +87,8 @@ burn <- function(tb, state, fxn, parameters){
 interv <- function(ti, state, fxn, parameters){
   if (ti>0){
     outi <- ode(y = state, times = seq(0, ti, by = 1), func = fxn, parms = parameters)
-    statei <- c(outi[ti, 2], outi[ti, 3], outi[ti, 4], outi[ti, 5], outi[ti, 6], outi[ti, 7], Y=0, outi[ti, 9]+outi[ti, 10], outi[ti, 10])}
+    outi <- outi[-1,]
+    statei <- c(outi[ti, 2], outi[ti, 3], outi[ti, 4], outi[ti, 5], outi[ti, 6], outi[ti, 7], Y=0, outi[ti, 9]+outi[ti, 8], outi[ti, 10])}
   else{statei <- state
   outi <- numeric()}
   intout <- list("out" = outi,"state" = statei)
@@ -100,10 +101,11 @@ calc <- function(ts, tb, ti, state, fxn, parameters, source){
   outi <- as.data.frame(intout$out)
   out <- ode(y = intout$state, times = ts, func = fxn, parms = parameters)
   out <- as.data.frame(out)
+  # Removing the first timestep, time zero, and all timesteps after "times"
+  out <- out[-1,]
   out$time <- out$time+ti
   out <- rbind(outi,out)
-  # Removing the first timestep, time zero
-  out <- out[-1,]
+  out <- out[1:10,]
   # Calculating the "interval from conversion" (see Styblo 1991 & TSRU progress report 1967)
   out$int <- parameters["Cy"]*out$C/sum(parameters["Cy"]*out$C)
   out$prev <- out$Y+out$C
