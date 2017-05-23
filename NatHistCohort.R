@@ -127,7 +127,7 @@ out <- rbind(outS, outF,outSi, outFi, outD)
 # Plot output
 theme_set(theme_bw())
 ##all scenarios
-ggplot(out[out$variable %in% c("Y"), ], aes(time, value, colour=source)) + geom_line(size=2) + labs(x = "Time", y = "Value") + facet_wrap(~ variable , scales = "free", nrow = 2)
+ggplot(out[out$variable %in% c("prev"), ], aes(time, value, colour=source)) + geom_line(size=2) + labs(x = "Time", y = "Value") + facet_wrap(~ variable , scales = "free", nrow = 2)
 # ggplot(out[out$variable %in% c("M"), ], aes(x = time, y = value, colour = source)) + geom_bar(data=out[out$variable %in% c("D"), ], stat="identity") + geom_line(size=2) + labs(x = "Time", y = "Incidence") 
 # Fitting parameters and state: proportion of individuals diseased after "Otime" years, using parameter set "Osource"
 Osource <- "F"; Otime <- 5
