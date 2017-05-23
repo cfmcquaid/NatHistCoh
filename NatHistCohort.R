@@ -55,7 +55,7 @@ times <- seq(0, 10, by = 1)
 # Timespan for burn
 timeb <- 1
 # Timespan for intervention
-timei <- 0
+timei <- 2
 # Timespan for tornado
 timet <- 5
 # ODE function
@@ -114,20 +114,25 @@ calc <- function(ts, tb, ti, state, fxn, parameters, source){
   out$source <- source
   return(out)
 }
-outS <- calc(ts = times, tb = timeb, ti=timei, state = state, fxn = regr, parameters = paramS, source = "S")
-outF <- calc(ts = times, tb = timeb, ti=timei, state = state, fxn = regr, parameters = paramF, source = "F")
+# No intervention
+outS <- calc(ts = times, tb = timeb, ti=0, state = state, fxn = regr, parameters = paramS, source = "S")
+outF <- calc(ts = times, tb = timeb, ti=0, state = state, fxn = regr, parameters = paramF, source = "F")
+# Intervention
+outSi <- calc(ts = times, tb = timeb, ti=timei, state = state, fxn = regr, parameters = paramS, source = "Si")
+outFi <- calc(ts = times, tb = timeb, ti=timei, state = state, fxn = regr, parameters = paramF, source = "Fi")
 # Including the data for barplot
 time <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10); variable <- c("D", "D", "D", "D", "D", "D", "D", "D", "D", "D"); value <- c(0.58, 0.24, 0.08, 0.05, 0.01, 0.01, 0.02, 0.01, 0, 0); source <- c("D", "D", "D", "D", "D", "D", "D", "D", "D", "D")
 outD <- data.frame(time, variable, value, source)
-out <- rbind(outS, outF, outD)
+out <- rbind(outS, outF,outSi, outFi, outD)
 # Plot output
 theme_set(theme_bw())
 ##all scenarios
-ggplot(out[out$variable %in% c("Q","K","R","Z","S","C","Y","M"), ], aes(time, value, colour=source)) + geom_line(size=2) + labs(x = "Time", y = "Value") + facet_wrap(~ variable , scales = "free", nrow = 2)
+ggplot(out[out$variable %in% c("Y"), ], aes(time, value, colour=source)) + geom_line(size=2) + labs(x = "Time", y = "Value") + facet_wrap(~ variable , scales = "free", nrow = 2)
 # ggplot(out[out$variable %in% c("M"), ], aes(x = time, y = value, colour = source)) + geom_bar(data=out[out$variable %in% c("D"), ], stat="identity") + geom_line(size=2) + labs(x = "Time", y = "Incidence") 
 # Fitting parameters and state: proportion of individuals diseased after "Otime" years, using parameter set "Osource"
 Osource <- "F"; Otime <- 5
 Iv <- out[which(out$source == Osource & out$variable == "int" & out$time == Otime), ]
+
 
 # # # Tornado plot
 # range <- 0.01 ##sets range for the change in the parameters
