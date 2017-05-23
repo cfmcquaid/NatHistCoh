@@ -55,7 +55,7 @@ times <- seq(0, 10, by = 1)
 # Timespan for burn
 timeb <- 1
 # Timespan for intervention
-timei <- 0
+timei <- 2
 # Timespan for tornado
 timet <- 5
 # ODE function
