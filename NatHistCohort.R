@@ -55,7 +55,7 @@ times <- seq(0, 10, by = 1)
 # Timespan for burn
 timeb <- 1
 # Timespan for intervention
-timei <- 2
+timei <- 0
 # Timespan for tornado
 timet <- 5
 # ODE function
@@ -123,8 +123,8 @@ out <- rbind(outS, outF, outD)
 # Plot output
 theme_set(theme_bw())
 ##all scenarios
-# ggplot(out[out$variable %in% c("int"), ], aes(time, value)) + geom_point(size=2) + labs(x = "Time", y = "Incidence") + facet_grid(source ~ . , scales = "fixed")
-ggplot(out[out$variable %in% c("prev"), ], aes(x = time, y = value, colour = source)) + geom_bar(data=out[out$variable %in% c("D"), ], stat="identity") + geom_line(size=2) + labs(x = "Time", y = "Incidence") 
+ggplot(out[out$variable %in% c("Q","K","R","Z","S","C","Y","M"), ], aes(time, value, colour=source)) + geom_line(size=2) + labs(x = "Time", y = "Value") + facet_wrap(~ variable , scales = "free", nrow = 2)
+# ggplot(out[out$variable %in% c("M"), ], aes(x = time, y = value, colour = source)) + geom_bar(data=out[out$variable %in% c("D"), ], stat="identity") + geom_line(size=2) + labs(x = "Time", y = "Incidence") 
 # Fitting parameters and state: proportion of individuals diseased after "Otime" years, using parameter set "Osource"
 Osource <- "F"; Otime <- 5
 Iv <- out[which(out$source == Osource & out$variable == "int" & out$time == Otime), ]
