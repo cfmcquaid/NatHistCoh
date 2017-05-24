@@ -125,9 +125,7 @@ time <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10); variable <- c("D", "D", "D", "D", "D",
 outD <- data.frame(time, variable, value, source)
 out <- rbind(outS, outF,outSi, outFi, outD)
 # Plot output
-theme_set(theme_bw())
-##all scenarios
-ggplot(out[out$variable %in% c("prev"), ], aes(time, value, colour=source, linetype=source)) + geom_line(size=2) + scale_linetype_manual(values=c("solid", "dotted","solid", "dotted")) + scale_color_manual(values=c("blue","blue","maroon","maroon")) + labs(x = "Time", y = "Prevalence") #+ facet_wrap(~ variable , scales = "free", nrow = 2)
+ggplot(out[out$variable %in% c("prev"), ], aes(time, value, colour=source, linetype=source)) + geom_line(size=2) + scale_linetype_manual(values=c("solid", "dashed","solid", "dashed"),name="Model",breaks=c("F","S","Fi","Si"),labels=c("Regression", "No regression", "Regression + intervention", "No regression + intervention")) + scale_color_manual(values=c("blue","blue","maroon","maroon"),name="Model",breaks=c("F","S","Fi","Si"),labels=c("Regression", "No regression", "Regression + intervention", "No regression + intervention")) + labs(x = "Time (years)", y = "Prevalence (/100,000 individuals)") + xlim(1,10)+ ylim(0,6000)+theme_bw()+ theme(legend.key.width=unit(2,"cm"),legend.justification=c(1,1),legend.position=c(.99,.99),legend.background = element_rect(size=0.5, linetype="solid",colour ="black"))#+ facet_wrap(~ variable , scales = "free", nrow = 2)
 # ggplot(out[out$variable %in% c("M"), ], aes(x = time, y = value, colour = source)) + geom_bar(data=out[out$variable %in% c("D"), ], stat="identity") + geom_line(size=2) + labs(x = "Time", y = "Incidence") 
 # Fitting parameters and state: proportion of individuals diseased after "Otime" years, using parameter set "Osource"
 Osource <- "F"; Otime <- 5
