@@ -47,7 +47,7 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr");
 # Regression: 1/(Yc + Ym) = 0.5 years, Ym = 0.5 (as above), therefore Yc = 1.5.
 # Regression: 1/(Cy + Cs) = 0.5 years. Assume ratio 2:1 for Cy:Cs, therefore Cs = 2/3
 paramS <- c(Eq=0.10, Qs=1.50, Qz=0.00, Kz=0.01, Kr=0.10, Sc=1.00, Sq=0.00, Sz=0.00, Zk=0.00, Zs=0.00, Zq=0.01, Cy=1.00, Cs=0.00, Cm=0.10, Ym=0.50, Yc=0.00)
-paramF <- c(Eq=0.10, Qs=2.50, Qz=0.00, Kz=0.02, Kr=0.10, Sc=2.00, Sq=1.00, Sz=0.01, Zk=0.01, Zs=0.00, Zq=0.02, Cy=2.00, Cs=1.00, Cm=0.10, Ym=0.60, Yc=0.10)
+paramF <- c(Eq=0.10, Qs=2.50, Qz=0.00, Kz=0.02, Kr=0.10, Sc=2.00, Sq=1.00, Sz=0.01, Zk=0.01, Zs=0.00, Zq=0.02, Cy=2.00, Cs=1.00, Cm=0.10, Ym=0.60, Yc=2.0)
 # Initial states of compartments
 state <- c(E=100000, Q=0, K=0, S=0, Z=0, C=0, Y=0, R=0, M=0)
 # Timespan for simulation
@@ -127,7 +127,7 @@ out <- rbind(outS, outF,outSi, outFi, outD)
 # Plot output
 theme_set(theme_bw())
 ##all scenarios
-ggplot(out[out$variable %in% c("prev"), ], aes(time, value, colour=source)) + geom_line(size=2) + labs(x = "Time", y = "Value") + facet_wrap(~ variable , scales = "free", nrow = 2)
+ggplot(out[out$variable %in% c("prev"), ], aes(time, value, colour=source, linetype=source)) + geom_line(size=2) + scale_linetype_manual(values=c("solid", "dotted","solid", "dotted")) + scale_color_manual(values=c("blue","blue","maroon","maroon")) + labs(x = "Time", y = "Prevalence") #+ facet_wrap(~ variable , scales = "free", nrow = 2)
 # ggplot(out[out$variable %in% c("M"), ], aes(x = time, y = value, colour = source)) + geom_bar(data=out[out$variable %in% c("D"), ], stat="identity") + geom_line(size=2) + labs(x = "Time", y = "Incidence") 
 # Fitting parameters and state: proportion of individuals diseased after "Otime" years, using parameter set "Osource"
 Osource <- "F"; Otime <- 5
