@@ -107,6 +107,19 @@ calc <- function(ts, tb, ti, state, fxn, parameters, source){
   out$source <- source
   return(out)
 }
+# COST
+ # A cost model comparing the output for a given parameter set to the data
+regrcost <- function(parameters){
+  state <- c(E=100000, K=0, R=0, Z=0, Q=0, S=0, C=0, Y=0, M=0)
+  time <- list(s=10, b=1, i=2, t=5)
+  out <- ode(times=seq(0,time$s,by=1), y=state, parms=c(parameters, Zs=0.00, Qz=0.00), func=regr)
+  out <- cbind(time=out[,1],parameters["Cy"]*out[8,]/sum(parameters["Cy"]*out[8,]))
+  as.data.frame(out)
+  return(modCost(model=out, obs=outDcomp, err="sd"))
+}
+
+regrcost2 <- function(lpars)
+  regrcost(exp(lpars))
 # TORNADO
 torn <- function(ts, tb, ti, tt, state, fxn, parameters, source){# Calculations for tornado plots
     # Storage fir results
@@ -134,14 +147,16 @@ torn <- function(ts, tb, ti, tt, state, fxn, parameters, source){# Calculations 
     return(data)
 }
 ### CODE #################################################################################################################
-library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); library("pryr");
+library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); library("pryr"); library("FME");
 # PARAMETER VALUES
   # Ax = rate from compartment A to compartment X
   # No regression  
   paramN <- c(Eq=0.10, Kr=0.10, Kz=0.01, Zk=0.00, Zq=0.01, Zs=0.00, Qz=0.00, Qs=1.50, Sz=0.00, Sq=0.00, Sc=1.00, Cs=0.00, Cy=1.00, Cm=0.10, Yc=0.00, Ym=0.50)
   # Regression
   paramR <- c(Eq=0.10, Kr=0.10, Kz=0.02, Zk=0.01, Zq=0.02, Zs=0.00, Qz=0.00, Qs=2.50, Sz=0.01, Sq=1.00, Sc=2.00, Cs=1.00, Cy=2.00, Cm=0.10, Yc=0.10, Ym=0.60)
-  # Proportion of change in parameters for tornado plot
+  paramR <- c(Eq=0.10, Kr=0.10, Kz=0.02, Zk=0.01, Zq=0.02, Qs=2.50, Sz=0.01, Sq=1.00, Sc=2.00, Cs=1.00, Cy=2.00, Cm=0.10, Yc=0.10, Ym=0.60)
+  
+   # Proportion of change in parameters for tornado plot
   range <- 0.01
 # INITIAL STATES
   state <- c(E=100000, K=0, R=0, Z=0, Q=0, S=0, C=0, Y=0, M=0)
@@ -162,8 +177,27 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); li
 # DATA
   # Inclusion of data for barplot
   outD <- data.frame(time=seq(1,time$s,by=1), variable=rep("D",10), value=c(.58,.24,.08,.05,.01,.01,.02,.01,0,0), source=rep("D",10))
+  # Inclusion of data for the fitting
+  outDcomp <- data.frame(time=seq(1,time$s,by=1), int=c(.58,.24,.08,.05,.01,.01,.02,.01,0,0), sd=rep(.1,10)) #RANDOM standard deviation chosen for now
   # Binding all results
   out <- rbind(outN, outR,outNi, outRi, outD)
+### FITTING ##############################################################################################################
+  fit <- regrcost(parameters=paramR)
+  Sfun <- sensFun(regrcost, paramR)
+  pairs(Sfun, which = c("int"), col = "blue")
+  ident <- collin(Sfun)
+  ident<-ident[ ! (ident$collinearity >15), ]
+  plot(ident, log = "y")
+  # fix some parameters
+
+  Pars <- paramR[1:14] * 2
+  Fit <- modFit(f = regrcost2, p = log(Pars))
+  exp(coef(Fit))
+  
+  ini <- regr(time$s,state,Pars)
+  final <- regr(time$s,state,exp(coef(Fit)))
+  par(mfrow = c(1,2))
+  plot(outDcomp, xlab = "time", ylab = "int")
 ### PLOTS ################################################################################################################
 # DATA
 plot.data <- {ggplot(out[out$variable%in%c("int")&out$source%in%c("R","N"),], aes(x=time,y=value,colour=source)) +
