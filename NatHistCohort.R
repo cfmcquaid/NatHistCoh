@@ -98,39 +98,47 @@ regrcost <- function(parameters){
 # TRANSFORM
 regrcost2 <- function(lpars)
   # Takes log(parameters) as input, fixes some, calculates cost
-  regrcost(c(exp(lpars), Zs=0))
+  regrcost(c(exp(lpars), Zs=0, Qz=0))
 ### CODE #################################################################################################################
 library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); library("pryr"); library("FME");
 # PARAMETER VALUES
-# Ax = rate from compartment A to compartment X
-# No regression  
-paramN <- c(Eq=0.10, Kr=0.10, Kz=0.01, Zk=0.00, Zq=0.01, Zs=0.00, Qz=0.00, Qs=1.50, Sz=0.00, Sq=0.00, Sc=1.00, Cs=0.00, Cy=1.00, Cm=0.10, Yc=0.00, Ym=0.50)
-# Regression
-paramR <- c(Eq=0.10, Kr=0.10, Kz=0.02, Zk=0.01, Zq=0.02, Zs=0.00, Qz=0.00, Qs=2.50, Sz=0.01, Sq=1.00, Sc=2.00, Cs=1.00, Cy=2.00, Cm=0.10, Yc=0.10, Ym=0.60)
+  # Ax = rate from compartment A to compartment X
+  # No regression  
+  paramN <- c(Eq=0.10, Kr=0.10, Kz=0.01, Zk=0.00, Zq=0.01, Zs=0.00, Qz=0.00, Qs=1.50, Sz=0.00, Sq=0.00, Sc=1.00, Cs=0.00, Cy=1.00, Cm=0.10, Yc=0.00, Ym=0.50)
+  # Regression
+  paramR <- c(Eq=0.10, Kr=0.10, Kz=0.02, Zk=0.01, Zq=0.02, Zs=0.00, Qz=0.00, Qs=2.50, Sz=0.01, Sq=1.00, Sc=2.00, Cs=1.00, Cy=2.00, Cm=0.10, Yc=0.10, Ym=0.60)
 # DATA
-# sd gives weighting, so that the total data on eg interval since conversion = total data on incidence after 5 years
-# Data on the interval since conversion
-dataINT <- data.frame(time=seq(1,10,by=1), int=c(.58,.24,.08,.05,.01,.01,.02,.01,0,0), sd=rep(0.1, 10))
-# Data on the incidence after 5 years
-dataINC <- data.frame(time=5, inc=0.05, sd=1)
+  # sd gives weighting, so that the total data on eg interval since conversion = total data on incidence after 5 years
+  # Data on the interval since conversion
+  dataINT <- cbind(time=seq(1,10,by=1), int=c(.58,.24,.08,.05,.01,.01,.02,.01,0,0), sd=rep(10, 10))
+  # Data on the incidence after 5 years
+  dataINC <- cbind(time=c(0,5), inc=c(0,0.05), sd=rep(2, 2))
 # FITTING 
-# Calculating residuals and costs
-fit <- regrcost(parameters=c(paramR))
-# Sensitivity functions (similar to tornado plot, look at L1 & L2)
-Sfun <- sensFun(regrcost, c(paramR))
-summary(Sfun)
-plot(Sfun, which=c("inc","int"), xlab="time", lwd=2)
-pairs(Sfun, which=c("inc","int"), col=c("blue","green"))
-# Collinearity
-ident <- collin(Sfun)
-ident<-ident[ !(ident$collinearity > 15), ]
-plot(ident, log="y")
-# Fix certain parameters
-Pars <- paramR[c(1:5, 7:16)] * 2
-Fit <- modFit(f=regrcost2, p=log(Pars))
-exp(coef(Fit))
-
-ini <- regr(time$s,state,Pars)
-final <- regr(time$s,state,exp(coef(Fit)))
-par(mfrow = c(1,2))
-plot(outDcomp, xlab = "time", ylab = "int")
+  # Calculating residuals and costs
+  fit <- regrcost(parameters=c(paramR))
+  # Sensitivity functions (similar to tornado plot, look at L1 & L2)
+  Sfun <- sensFun(regrcost, c(paramR))
+  summary(Sfun)
+  plot(Sfun, which=c("inc","int"), xlab="time", lwd=2)
+  pairs(Sfun, which=c("inc","int"), col=c("blue","green"))
+  # Collinearity
+  ident <- collin(Sfun)
+  ident<-ident[ !(ident$collinearity > 15), ]
+  plot(ident, log="y")
+  # Fix certain parameters
+  Pars <- paramR[c(1:5, 8:16)]
+  Fit <- modFit(f=regrcost2, p=log(Pars))
+  exp(coef(Fit))
+  # Comparison of before and after fitting
+  ini <- calc(parameters = c(Pars, Zs=0, Qz=0))
+  final <- calc(parameters = c(exp(coef(Fit)), Zs=0, Qz=0))
+  # Plot results
+  par(mfrow = c(1,2))
+  plot(dataINC, xlab = "time", ylab = "incidence")
+    lines(ini$time, ini$inc, lty = 2)
+    lines(final$time, final$inc)
+  plot(dataINT, xlab = "time", ylab = "interval")
+    lines(ini$time, ini$int, lty = 2)
+    lines(final$time, final$int)
+    legend("topright", c("data", "initial", "fitted"),lty = c(NA,2,1), pch = c(1, NA, NA))
+  par(mfrow = c(1, 1))
