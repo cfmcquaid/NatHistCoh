@@ -168,3 +168,7 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); li
 var0 <- Fit$var_ms_unweighted
 cov0 <- summary(Fit)$cov.scaled * 2.4^2/5
 MCMC <- modMCMC(f=regrcost2, p=Fit$par, niter=5000, jump=cov0, var0=var0, wvar0=0.1, updatecov=50)
+MCMC$pars <- exp(MCMC$pars)
+summary(MCMC)
+plot(MCMC, Full=TRUE)
+pairs(MCMC, nsample=1000)
