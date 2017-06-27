@@ -1,5 +1,5 @@
 # CF McQuaid & RMGJ Houben
-# Start 21/04/2017 ---> current version after code-cleansing 25/05/2017
+# Start 21/04/2017 ---> current version for model fitting 26/06/2017
 # Cohort model of TB including regression and a slow stream
 ### DIAGRAM ###############################################################################################################
 #                                      #
@@ -19,6 +19,7 @@
 ##set wd depending on who is coding/playing
 setwd("C:/Users/cfmcquaid/Simulations")
 #setwd("/Users/ReinHouben/Filr/ifolder/Applications (funding and jobs)/2016 - ERC starting grant/Rmodel_nathis/NatHistCoh")
+# URL for fitting vignette: https://cran.r-project.org/web/packages/FME/vignettes/FME.pdf
 
 ### URL for how to upload changes: http://r-bio.github.io/intro-git-rstudio/
 ### to pull in Finn's version - type in shell: git pull upstream master
@@ -68,10 +69,9 @@ burn <- function(tb, state, parameters){
 # SIMULATE
 calc <- function(parameters=parameters){
   # Run simulation, incorporating  burn period into disease dynamics
-  # INITIAL STATES
+  # Initial states
   state <- c(E=100000, K=0, R=0, Z=0, Q=0, S=0, C=0, Y=0, M=0)
-  # TIMESPAN
-  # total simulation, burn period
+  # total simulation time and burn period
   time <- list(s=10, b=1)
   # Calculate initial state after burn
   stateb <- burn(tb=time$b, state=state, parameters=parameters)
@@ -82,42 +82,55 @@ calc <- function(parameters=parameters){
   out <- out[-1,]
   # Calculate interval from conversion (see Styblo 1991 & TSRU progress report 1967)
   out$int <- parameters["Cy"]*out$C/sum(parameters["Cy"]*out$C)
-  return(cbind(time=out$time, int=out$int))
+  # Calculate incidence
+  out$inc <- parameters["Sc"]*out$S/(out$E+out$K+out$Z+out$Q+out$S)
+  # Produce output for comparison with data
+  data.frame(cbind(time=out$time, int=out$int, inc=out$inc))
 }
 # COST
- # A cost model comparing the output for a given parameter set to the data
 regrcost <- function(parameters){
+  # A cost model comparing the output for a given parameter set to the data
   out <- calc(parameters)
-  return(modCost(model=out, obs=data, err="sd"))
+  cost <- modCost(model=out, obs=dataINC, err="sd")
+  # No standard deviation in data here as it is unknown
+  return(modCost(model=out, obs=dataINT, err="sd", cost=cost))
 }
-# Aotehr fitting fxn
+# TRANSFORM
 regrcost2 <- function(lpars)
-  regrcost(exp(lpars))
+  # Takes log(parameters) as input, fixes some, calculates cost
+  regrcost(c(exp(lpars), Zs=0))
 ### CODE #################################################################################################################
 library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); library("pryr"); library("FME");
 # PARAMETER VALUES
-  # Ax = rate from compartment A to compartment X
-  # No regression  
-  paramN <- c(Eq=0.10, Kr=0.10, Kz=0.01, Zk=0.00, Zq=0.01, Zs=0.00, Qz=0.00, Qs=1.50, Sz=0.00, Sq=0.00, Sc=1.00, Cs=0.00, Cy=1.00, Cm=0.10, Yc=0.00, Ym=0.50)
-  # Regression
-  paramR <- c(Eq=0.10, Kr=0.10, Kz=0.02, Zk=0.01, Zq=0.02, Zs=0.00, Qz=0.00, Qs=2.50, Sz=0.01, Sq=1.00, Sc=2.00, Cs=1.00, Cy=2.00, Cm=0.10, Yc=0.10, Ym=0.60)
+# Ax = rate from compartment A to compartment X
+# No regression  
+paramN <- c(Eq=0.10, Kr=0.10, Kz=0.01, Zk=0.00, Zq=0.01, Zs=0.00, Qz=0.00, Qs=1.50, Sz=0.00, Sq=0.00, Sc=1.00, Cs=0.00, Cy=1.00, Cm=0.10, Yc=0.00, Ym=0.50)
+# Regression
+paramR <- c(Eq=0.10, Kr=0.10, Kz=0.02, Zk=0.01, Zq=0.02, Zs=0.00, Qz=0.00, Qs=2.50, Sz=0.01, Sq=1.00, Sc=2.00, Cs=1.00, Cy=2.00, Cm=0.10, Yc=0.10, Ym=0.60)
 # DATA
-  # Inclusion of data for the fitting
-  data <- data.frame(time=seq(1,10,by=1), int=c(.58,.24,.08,.05,.01,.01,.02,.01,0,0), sd=rep(.1,10)) #RANDOM standard deviation chosen for now
-### FITTING ##############################################################################################################
-  fit <- regrcost(parameters=c(paramR))
-  Sfun <- sensFun(regrcost, c(paramR))
-  pairs(Sfun, which = c("int"), col = "blue")
-  ident <- collin(Sfun)
-  ident<-ident[ ! (ident$collinearity >15), ]
-  plot(ident, log = "y")
-  # fix some parameters
+# sd gives weighting, so that the total data on eg interval since conversion = total data on incidence after 5 years
+# Data on the interval since conversion
+dataINT <- data.frame(time=seq(1,10,by=1), int=c(.58,.24,.08,.05,.01,.01,.02,.01,0,0), sd=rep(0.1, 10))
+# Data on the incidence after 5 years
+dataINC <- data.frame(time=5, inc=0.05, sd=1)
+# FITTING 
+# Calculating residuals and costs
+fit <- regrcost(parameters=c(paramR))
+# Sensitivity functions (similar to tornado plot, look at L1 & L2)
+Sfun <- sensFun(regrcost, c(paramR))
+summary(Sfun)
+plot(Sfun, which=c("inc","int"), xlab="time", lwd=2)
+pairs(Sfun, which=c("inc","int"), col=c("blue","green"))
+# Collinearity
+ident <- collin(Sfun)
+ident<-ident[ !(ident$collinearity > 15), ]
+plot(ident, log="y")
+# Fix certain parameters
+Pars <- paramR[c(1:5, 7:16)] * 2
+Fit <- modFit(f=regrcost2, p=log(Pars))
+exp(coef(Fit))
 
-  Pars <- paramR[1:14] * 2
-  Fit <- modFit(f = regrcost2, p = log(Pars))
-  exp(coef(Fit))
-  
-  ini <- regr(time$s,state,Pars)
-  final <- regr(time$s,state,exp(coef(Fit)))
-  par(mfrow = c(1,2))
-  plot(outDcomp, xlab = "time", ylab = "int")
+ini <- regr(time$s,state,Pars)
+final <- regr(time$s,state,exp(coef(Fit)))
+par(mfrow = c(1,2))
+plot(outDcomp, xlab = "time", ylab = "int")
