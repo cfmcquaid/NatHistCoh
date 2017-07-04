@@ -120,6 +120,7 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); li
   dataINT <- cbind(time=seq(1,10,by=1), int=c(.58,.24,.08,.05,.01,.01,.02,.01,0,0), sd=rep(10, 10))
   # Data on the incidence after 5 years
   dataINC <- cbind(time=c(0,5), inc=c(0,0.05), sd=rep(2, 2))
+  dataINC <- cbind(time=c(5), inc=c(0.05), sd=rep(1, 1))
 ### FITTING ##############################################################################################################
   # Calculating residuals and costs
   fit <- regrcost(parameters=c(paramR))
@@ -149,7 +150,7 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); li
   ############ 
   # ini <- calc(parameters = c(Pars, Zs=0, Qz=0))
   # final <- calc(parameters = c(exp(coef(Fit)), Zs=0, Qz=0))
-    ini <- calc(parameters = c(Pars, Kr=0.10, Kz=0.02, Zk=0.01, Zs=0.00, Qz=0.00, Sz=0.01, Sq=1.00, Sc=2.00, Cs=1.00, Cy=2.00, Cm=0.10, Yc=0.10, Ym=0.60))
+  ini <- calc(parameters = c(Pars, Kr=0.10, Kz=0.02, Zk=0.01, Zs=0.00, Qz=0.00, Sz=0.01, Sq=1.00, Sc=2.00, Cs=1.00, Cy=2.00, Cm=0.10, Yc=0.10, Ym=0.60))
   final <- calc(parameters = c(exp(coef(Fit)), Kr=0.10, Kz=0.02, Zk=0.01, Zs=0.00, Qz=0.00, Sz=0.01, Sq=1.00, Sc=2.00, Cs=1.00, Cy=2.00, Cm=0.10, Yc=0.10, Ym=0.60))
   ############
   
@@ -167,8 +168,15 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); li
 # MCMC
 var0 <- Fit$var_ms_unweighted
 cov0 <- summary(Fit)$cov.scaled * 2.4^2/5
-MCMC <- modMCMC(f=regrcost2, p=Fit$par, niter=5000, jump=cov0, var0=var0, wvar0=0.1, updatecov=50)
+
+
+############ 
+#MCMC <- modMCMC(f=regrcost2, p=Fit$par, niter=5000, jump=cov0, var0=var0, wvar0=0.1, updatecov=50)
+MCMC <- modMCMC(f=regrcost2, p=exp(coef(Fit)), niter=5000, jump=cov0, var0=var0, wvar0=0.1, updatecov=50)
+############ 
+
+
 MCMC$pars <- exp(MCMC$pars)
 summary(MCMC)
 plot(MCMC, Full=TRUE)
-pairs(MCMC, nsample=1000)
+pairs(MCMC, nsample=500)
