@@ -4,12 +4,12 @@
 ### DIAGRAM ###############################################################################################################
 #                                      #
 #                        M             # M - Death (due to disease)
-#                       ^ ^            #
+#                       ^ ^            # W - Background mortality
 #                      /   \           #
 #      -> Q <-> S <-> C <-> Y          # Q - Failed granuloma, S - Subclinical, C - Minimal (C+S-), Y - Disseminated (C+S+, symptomatic)
-#     /    \    ^                      #
-#    E       \  |                      # E - Exposed
-#     \        \v                      #
+#     /    \    ^      \   /           #
+#    E       \  |       v v            # E - Exposed, instantly a proportion Ek move to K, & 1-Ek to Q
+#     \        \v        D             # D - Diagnosed
 #      -> K <-> Z                      # K - Controlled granuloma, Z- Leaky granuloma,
 #         |                            #
 #         v                            #
@@ -43,140 +43,215 @@ setwd("C:/Users/cfmcquaid/Simulations")
 regr <- function(t, state, parameters){
   with(as.list(c(state, parameters)), {
     # rates of change
-    dE <- - 10*E
-    dK <- + 10*(1 - Eq)*E + Zk*Z - (Kz + Kr)*K
+    dK <- + Zk*Z - (Kz + Kr + w)*K
     dR <- + Kr*K
-    dZ <- + Kz*K + Sz*S + Qz*Q - (Zk + Zs + Zq)*Z
-    dQ <- + 10*Eq*E + Sq*S + Zq*Z - (Qs + Qz)*Q
-    dS <- + Qs*Q + Cs*C + Zs*Z - (Sc + Sq + Sz)*S
-    dC <- + Sc*S + Yc*Y - (Cs + Cy + Cm)*C
-    dY <- + Cy*C -(Yc + Ym)*Y
+    dZ <- + Kz*K + Sz*S + Qz*Q - (Zk + Zs + Zq + w)*Z
+    dQ <- + Sq*S + Zq*Z - (Qs + Qz + w)*Q
+    dS <- + Qs*Q + Cs*C + Zs*Z - (Sc + Sq + Sz + w)*S
+    dC <- + Sc*S + Yc*Y - (Cs + Cy + Cm + Cd + w)*C
+    dY <- + Cy*C -(Yc + Ym + Yd + w)*Y
+    dD <- + Cd*C + Yd*Y
     dM <- + Ym*Y + Cm*C
+    dW <- + (K + Z + Q + S + C + Y)*w
     # return the rate of change
-    list(c(dE, dK, dR, dZ, dQ, dS, dC, dY, dM))
+    list(c(dK, dR, dZ, dQ, dS, dC, dY, dD, dM, dW))
   })
-}
-# BURN
-burn <- function(tb, state, parameters){
-  if (tb>0){
-    # Calculate up until end of burn period
-    out <- ode(y=state, times=seq(0,tb,by=1), func=regr, parms=parameters)
-    # Reset initial state removing indivs in Y & M
-    stateb <- c(out[tb+1,2], out[tb+1,3], out[tb+1,4], out[tb+1,5], out[tb+1,6], out[tb+1,7], out[tb+1,8], Y=0, M=0)}
-  else{stateb <- state}
-  return(stateb)
 }
 # SIMULATE
 calc <- function(parameters=parameters){
-  # Run simulation, incorporating  burn period into disease dynamics
+  # Run simulation, incorporating periods with different notification rates into disease dynamics, & calculate output
   # Initial states
-  state <- c(E=100000, K=0, R=0, Z=0, Q=0, S=0, C=0, Y=0, M=0)
-  # total simulation time and burn period
-  time <- list(s=10, b=1)
-  # Calculate initial state after burn
-  stateb <- burn(tb=time$b, state=state, parameters=parameters)
-  # Calculate after burn
-  out <- ode(y=state, times=seq(0,time$s,by=1), func=regr, parms=parameters)
+  state <- c(K=100000*unname(parameters["Ek"]), R=0, Z=0, Q=100000*(1-unname(parameters["Ek"])), S=0, C=0, Y=0, D=0, M=0, W=0)
+  # Times for different simulation periods (i.e. with different notification rates)
+  time <- list(b1=1, b2=1, b3=15)
+  # Run for different periods in which the notification rate changes
+    # Calculate initial state up until diagnosis
+    out1 <- ode(y=state, times=seq(0,time$b1,by=1), func=regr, parms=c(parameters,Cd=0,Yd=0))
+    stateb1 <- out1[time$b1+1, 2:ncol(out1)]
+    # Calculate coprevalent cases
+    out2 <- ode(y=stateb1, times=seq(time$b1,time$b1+time$b2,by=1), func=regr, parms=c(parameters,Cd=2,Yd=2))
+    stateb2 <- out2[time$b2+1, 2:ncol(out2)]
+    # Calculate remaining time
+    out3 <- ode(y=stateb2, times=seq(time$b1+time$b2,time$b1+time$b2+time$b3,by=1), func=regr, parms=c(parameters, Cd=4, Yd=4))
+  # Compile output and remove repeated years
+  out <- rbind(out1, out2, out3)
+  out <- out[-c(time$b1+1,time$b1+time$b2+2),]
   out <- as.data.frame(out)
-  # Removing year 0
-  out <- out[-1,]
-  # Calculate interval from conversion (see Styblo 1991 & TSRU progress report 1967)
-  out$int <- parameters["Cy"]*out$C/sum(parameters["Cy"]*out$C)
+  # Calculate interval from conversion
+  out$int <- out$D-c(0,out$D[-(time$b1+time$b2+time$b3+1)])
   # Calculate incidence
-  out$inc <- parameters["Sc"]*out$S/(out$E+out$K+out$Z+out$Q+out$S)
+  out$inc <- out$D/100000
   # Produce output for comparison with data
-  data.frame(cbind(time=out$time, int=out$int, inc=out$inc))
+  #data.frame(cbind(time=out$time, int=out$int, inc=out$inc))
+  return(out)
 }
 # COST
 regrcost <- function(parameters){
   # A cost model comparing the output for a given parameter set to the data
   out <- calc(parameters)
+  # Run for each different data set
   cost <- modCost(model=out, obs=dataINC, err="sd")
-  # No standard deviation in data here as it is unknown
+  # Run for each different data set
   return(modCost(model=out, obs=dataINT, err="sd", cost=cost))
 }
 # TRANSFORM
 regrcost2 <- function(lpars){
   # Takes log(parameters) as input, fixes some, calculates cost
-  
-  
-  ############
-  # regrcost(c(exp(lpars), Zs=0, Qz=0))}
-  regrcost(c(exp(lpars), Kr=0.10, Kz=0.02, Zk=0.01, Zs=0.00, Qz=0.00, Sz=0.01, Sq=1.00, Sc=2.00, Cs=1.00, Cy=2.00, Cm=0.10, Yc=0.10, Ym=0.60))}
-  ############
-
-
+  regrcost(c(exp(lpars), Zs=0, Qz=0))}
 ### INPUT #################################################################################################################
 library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); library("pryr"); library("FME");
 # PARAMETER VALUES
   # Ax = rate from compartment A to compartment X
   # No regression  
-  paramN <- c(Eq=0.10, Kr=0.10, Kz=0.01, Zk=0.00, Zq=0.01, Zs=0.00, Qz=0.00, Qs=1.50, Sz=0.00, Sq=0.00, Sc=1.00, Cs=0.00, Cy=1.00, Cm=0.10, Yc=0.00, Ym=0.50)
+  paramN <- c(Ek=0.90, Kr=0.10, Kz=0.01, Zk=0.00, Zq=0.01, Zs=0.00, Qz=0.00, Qs=1.50, Sz=0.00, Sq=0.00, Sc=1.00, Cs=0.00, Cy=1.00, Cm=0.10, Yc=0.00, Ym=0.50, w=0.01)
   # Regression
-  paramR <- c(Eq=0.10, Kr=0.10, Kz=0.02, Zk=0.01, Zq=0.02, Zs=0.00, Qz=0.00, Qs=2.50, Sz=0.01, Sq=1.00, Sc=2.00, Cs=1.00, Cy=2.00, Cm=0.10, Yc=0.10, Ym=0.60)
+  paramR <- c(Ek=0.90, Kr=0.10, Kz=0.02, Zk=0.01, Zq=0.02, Zs=0.00, Qz=0.00, Qs=2.50, Sz=0.01, Sq=1.00, Sc=2.00, Cs=1.00, Cy=2.00, Cm=0.10, Yc=0.10, Ym=0.60, w=0.01)
 # DATA
   # sd gives weighting, so that the total data on eg interval since conversion = total data on incidence after 5 years
   # Data on the interval since conversion
   dataINT <- cbind(time=seq(1,10,by=1), int=c(.58,.24,.08,.05,.01,.01,.02,.01,0,0), sd=rep(10, 10))
   # Data on the incidence after 5 years
-  dataINC <- cbind(time=c(0,5), inc=c(0,0.05), sd=rep(2, 2))
-  dataINC <- cbind(time=c(5), inc=c(0.05), sd=rep(1, 1))
-### FITTING ##############################################################################################################
-  # Calculating residuals and costs
-  fit <- regrcost(parameters=c(paramR))
-  # Sensitivity functions (similar to tornado plot, look at L1 & L2)
-  Sfun <- sensFun(regrcost, c(paramR))
-  summary(Sfun)
-  plot(Sfun, which=c("inc","int"), xlab="time", lwd=2)
-  pairs(Sfun, which=c("inc","int"), col=c("blue","green"))
-  # Collinearity
-  ident <- collin(Sfun)
-  ident<-ident[ !(ident$collinearity > 15), ]
-  plot(ident, log="y")
-  # Fix certain parameters
- 
+  dataINC <- cbind(time=c(5, 10, 100), inc=c(0.05, 0.1, 0.1), sd=rep(2, 3))
+# CALCULATION
+  out <- calc(paramR)
+### PLOTS #################################################################################################################
+outplot <- melt(out, id.vars=c("time"))
+# Choose outputs to compare, labels, line colours & types, y-legend
+# SINK
+sink <- {list(out = c("R","D","M","W"),
+  lab = c("R - Sterilized granuloma","D - Notified","M - Death (TB)","W - Death (other)"),
+  leg = c("Sink size (individuals)"),
+  typ = c("solid", "solid","dashed", "dashed"),
+  col = c("navy","blue","maroon","red"))}
+# SLOW
+slow <- {list(out = c("K","Z"),
+  lab = c("K - Controlled granuloma","Z - Leaky granuloma"),
+  leg = c("Slow size (individuals)"),
+  typ = c("solid", "solid","dashed", "dashed"),
+  col = c("navy","maroon"))}
+# FAST
+fast <- {list(out = c("Q","S","C","Y"),
+  lab = c("Q - Failed granuloma","S - Subclinical","C - Minimal","Y - Disseminated"),
+  leg = c("Fast size (individuals)"),
+  typ = c("solid", "solid","dashed", "dashed"),
+  col = c("navy","blue","red","maroon"))}
+# PLOT
+comp <- sink
+plot.out <- {ggplot(outplot[outplot$variable%in%comp$out,], aes(time,value,colour=variable,linetype=variable)) +
+  # Lineplot of model results
+  geom_line(size=2) +
+  # Line types and legends
+  scale_linetype_manual(values=comp$typ, name="Model", breaks=comp$out, labels=comp$lab) +
+  # Line colours and legends
+  scale_color_manual(values=comp$col, name="Model", breaks=comp$out, labels=comp$lab) +
+  # Axis labels
+  labs(x="Time (years)", y=comp$leg) +
+  # Axis limits
+  xlim(1, max(outplot$time)) +
+  ylim(0, 100000) +
+  # Legend placement, size, text size
+  theme_bw() +
+  theme(legend.key.width=unit(2,"cm"), legend.justification=c(1,1), legend.position=c(.99,.99), legend.background=element_rect(size=0.5,linetype="solid",colour="black"), legend.text=element_text(size=20), legend.title=element_text(size=20), axis.text=element_text(size=15), axis.title=element_text(size=25))}
+plot.out
   
-  ############
-  # Pars <- paramR[c(1:5, 8:16)]
-  Pars <- paramR[c(1, 5, 8)]
-  ############
   
   
-  Fit <- modFit(f=regrcost2, p=log(Pars))
-  exp(coef(Fit))
-  # Comparison of before and after fitting
   
   
-  ############ 
-  # ini <- calc(parameters = c(Pars, Zs=0, Qz=0))
-  # final <- calc(parameters = c(exp(coef(Fit)), Zs=0, Qz=0))
-  ini <- calc(parameters = c(Pars, Kr=0.10, Kz=0.02, Zk=0.01, Zs=0.00, Qz=0.00, Sz=0.01, Sq=1.00, Sc=2.00, Cs=1.00, Cy=2.00, Cm=0.10, Yc=0.10, Ym=0.60))
-  final <- calc(parameters = c(exp(coef(Fit)), Kr=0.10, Kz=0.02, Zk=0.01, Zs=0.00, Qz=0.00, Sz=0.01, Sq=1.00, Sc=2.00, Cs=1.00, Cy=2.00, Cm=0.10, Yc=0.10, Ym=0.60))
-  ############
   
   
-  # Plot results
-  par(mfrow = c(1,2))
-  plot(dataINC, xlab = "time", ylab = "incidence")
-    lines(ini$time, ini$inc, lty = 2)
-    lines(final$time, final$inc)
-  plot(dataINT, xlab = "time", ylab = "interval")
-    lines(ini$time, ini$int, lty = 2)
-    lines(final$time, final$int)
-    legend("topright", c("data", "initial", "fitted"),lty = c(NA,2,1), pch = c(1, NA, NA))
-  par(mfrow = c(1, 1))
-# MCMC
-var0 <- Fit$var_ms_unweighted
-cov0 <- summary(Fit)$cov.scaled * 2.4^2/5
+  
+
+# ### FITTING ##############################################################################################################
+#   # Calculating residuals and costs
+#   fit <- regrcost(parameters=c(paramR))
+#   # Sensitivity functions (similar to tornado plot, look at L1 & L2)
+#   Sfun <- sensFun(regrcost, c(paramR))
+#   summary(Sfun)
+#   plot(Sfun, which=c("inc","int"), xlab="time", lwd=2)
+#   pairs(Sfun, which=c("inc","int"), col=c("blue","green"))
+#   # Collinearity
+#   ident <- collin(Sfun)
+#   ident<-ident[ !(ident$collinearity > 15), ]
+#   plot(ident, log="y")
+#   # Fix certain parameters
+#   Pars <- paramR[c(1:5, 8:19)]
+#   Fit <- modFit(f=regrcost2, p=log(Pars))
+#   exp(coef(Fit))
+#   # Comparison of before and after fitting
+#   ini <- calc(parameters = c(Pars, Zs=0, Qz=0))
+#   final <- calc(parameters = c(exp(coef(Fit)), Zs=0, Qz=0))
+#   # Plot results
+#   par(mfrow = c(1,2))
+#   plot(dataINC, xlab = "time", ylab = "incidence")
+#     lines(ini$time, ini$inc, lty = 2)
+#     lines(final$time, final$inc)
+#   plot(dataINT, xlab = "time", ylab = "interval")
+#     lines(ini$time, ini$int, lty = 2)
+#     lines(final$time, final$int)
+#     legend("topright", c("data", "initial", "fitted"),lty = c(NA,2,1), pch = c(1, NA, NA))
+#   par(mfrow = c(1, 1))
+# # MCMC
+# var0 <- Fit$var_ms_unweighted
+# cov0 <- summary(Fit)$cov.scaled * 2.4^2/5
+# MCMC <- modMCMC(f=regrcost2, p=Fit$par, niter=5000, jump=cov0, var0=var0, wvar0=0.1, updatecov=50)
+# MCMC$pars <- exp(MCMC$pars)
+# summary(MCMC)
+# plot(MCMC, Full=TRUE)
+# pairs(MCMC, nsample=500)
 
 
-############ 
-#MCMC <- modMCMC(f=regrcost2, p=Fit$par, niter=5000, jump=cov0, var0=var0, wvar0=0.1, updatecov=50)
-MCMC <- modMCMC(f=regrcost2, p=exp(coef(Fit)), niter=5000, jump=cov0, var0=var0, wvar0=0.1, updatecov=50)
-############ 
 
 
-MCMC$pars <- exp(MCMC$pars)
-summary(MCMC)
-plot(MCMC, Full=TRUE)
-pairs(MCMC, nsample=500)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ####################
+# # TORNADO PLOT
+# torn <- function(ts, tb, ti, tt, state, fxn, parameters, source){# Calculations for tornado plots
+#     # Store data
+#     # Storage fir results
+#     data <- rbind(parameters, parameters)
+#     rownames(data) <- c('+1%', '-1%')
+#       # Calculate with default data set
+#       out <- calc(ts=ts, tb=tb, ti=ti, state=state, fxn=regr, parameters=parameters, source=source)
+#       # Extract result
+#       def <- out[which(out$time==tt & out$variable=="int"),"value"]
+#     for (i in 1:16){
+#       # Increasing and decreasing each parameter in turn
+#       parametersM = parameters
+#       parametersL = parameters
+#       parametersM[i] = parametersM[i] + range*parametersM[i]
+#       parametersL[i] = parametersL[i] - range*parametersL[i]
+#       # Calculating with increased and decreased parameters
+#         outM <- calc(ts = ts, tb = tb, ti=ti, state = state, fxn = regr, parameters = parametersM, source = source)
+#       outL <- calc(ts = ts, tb = tb, ti=ti, state = state, fxn = regr, parameters = parametersL, source = source)
+#       # Extract results
+#         outM <- (outM[which(outM$time==tt & outM$variable=="int"),"value"] - def) / def
+#       outL <- (outL[which(outL$time==tt & outL$variable=="int"),"value"] - def) / def
+#       data[1, i] <- outM
+#       data[2, i] <- outL
+#     }
+#     return(data)
+# }
+# 
+# 
+# {dev.control('enable')
+#   x <- seq(-0.01,0.01, length=10)
+#   ORD = order(abs(dat[2,]-dat[1,]))
+#   # Bar colours: black = increase in parameter value, white = decrease in parameter value
+#   barplot(dat[1,ORD], horiz=T, las=1, xlim=c(-0.01,0.01), xaxt='n', ylab='', beside=T, col=c('black'))
+#   barplot(dat[2,ORD], horiz=T, las=1, xlim=c(-0.01,0.01), xaxt='n', ylab='', beside=T, col=c('white'), add=TRUE)
+#   axis(1, at=pretty(x), lab=paste0(pretty(x)*100,"%"), las=TRUE)}
+# plot.torn = recordPlot()
