@@ -76,12 +76,12 @@ calc <- function(parameters){
     stateb2 <- out2[time$b2+1, 2:ncol(out2)]
     # Calculate remaining time
     out3 <- ode(y=stateb2, times=seq(time$b1+time$b2,time$b1+time$b2+time$b3,by=1), func=regr, parms=c(parameters, Cd=1, Yd=1))
-  # Compile output and remove repeated years
+  # Compile output and remove year 0 & repeated years
   out <- rbind(out1, out2, out3)
-  out <- out[-c(time$b1+1,time$b1+time$b2+2),]
+  out <- out[-c(1,time$b1+1,time$b1+time$b2+2),]
   out <- as.data.frame(out)
   # Calculate interval from conversion
-  out$int <- (out$D-c(0,out$D[-(time$b1+time$b2+time$b3+1)]))/out$D[time$b1+time$b2+time$b3+1]
+  out$int <- (out$D-c(0,out$D[-(time$b1+time$b2+time$b3)]))/out$D[time$b1+time$b2+time$b3]
   # Calculate incidence
   out$inc <- out$D/100000
   # Produce output for comparison with data
