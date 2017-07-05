@@ -66,7 +66,7 @@ calc <- function(parameters){
   # Initial states
   state <- c(K=100000*unname(parameters["Ek"]), R=0, Z=0, Q=100000*(1-unname(parameters["Ek"])), S=0, C=0, Y=0, D=0, M=0, W=0)
   # Times for different simulation periods (i.e. with different notification rates)
-  time <- list(b1=1, b2=1, b3=15)
+  time <- list(b1=1, b2=1, b3=14)
   # Run for different periods in which the notification rate changes
     # Calculate initial state up until diagnosis
     out1 <- ode(y=state, times=seq(0,time$b1,by=1), func=regr, parms=c(parameters,Cd=0,Yd=0))
@@ -76,12 +76,13 @@ calc <- function(parameters){
     stateb2 <- out2[time$b2+1, 2:ncol(out2)]
     # Calculate remaining time
     out3 <- ode(y=stateb2, times=seq(time$b1+time$b2,time$b1+time$b2+time$b3,by=1), func=regr, parms=c(parameters, Cd=1, Yd=1))
-  # Compile output and remove year 0 & repeated years
-  out <- rbind(out1, out2, out3)
-  out <- out[-c(1,time$b1+1,time$b1+time$b2+2),]
+  # Compile output and remove burn period & repeated years
+  out <- rbind(out2, out3)
+  out <- out[-c(1,time$b2+2),]
+  out[,"time"] <- out[,"time"] - time$b1
   out <- as.data.frame(out)
   # Calculate interval from conversion
-  out$int <- (out$D-c(0,out$D[-(time$b1+time$b2+time$b3)]))/out$D[time$b1+time$b2+time$b3]
+  out$int <- (out$D-c(0,out$D[-(time$b2+time$b3)]))/out$D[time$b2+time$b3]
   # Calculate incidence
   out$inc <- out$D/100000
   # Produce output for comparison with data
