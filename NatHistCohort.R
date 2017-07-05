@@ -58,7 +58,7 @@ regr <- function(t, state, parameters){
   })
 }
 # SIMULATE
-calc <- function(parameters=parameters){
+calc <- function(parameters){
   # Run simulation, incorporating periods with different notification rates into disease dynamics, & calculate output
   # Initial states
   state <- c(K=100000*unname(parameters["Ek"]), R=0, Z=0, Q=100000*(1-unname(parameters["Ek"])), S=0, C=0, Y=0, D=0, M=0, W=0)
@@ -98,6 +98,32 @@ regrcost <- function(parameters){
 regrcost2 <- function(lpars){
   # Takes log(parameters) as input, fixes some, calculates cost
   regrcost(c(exp(lpars), Zs=0, Qz=0))}
+# TORNADO PLOT
+torn <- function(time, variable, range, parameters){# Calculations for tornado plots
+  # Storage for results
+  res <- rbind(parameters, parameters)
+  rownames(res) <- c('+1%', '-1%')
+  # Calculate with default data set
+  out <- calc(parameters=parameters)
+  # Extract result
+  def <- out[time, variable]
+  for (i in 1:length(parameters)){
+    # Increasing and decreasing each parameter in turn
+    parametersM = parameters
+    parametersL = parameters
+    parametersM[i] = parametersM[i] + range*parametersM[i]
+    parametersL[i] = parametersL[i] - range*parametersL[i]
+    # Calculating with increased and decreased parameters
+    outM <- calc(parameters = parametersM)
+    outL <- calc(parameters = parametersL)
+    # Extract results
+    outM <- (outM[time, variable] - def) / def
+    outL <- (outL[time, variable] - def) / def
+    res[1, i] <- outM
+    res[2, i] <- outL
+  }
+  return(res)
+}
 ### INPUT #################################################################################################################
 library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); library("pryr"); library("FME");
 # PARAMETER VALUES
@@ -218,40 +244,13 @@ plot.out
 
 
 # ####################
-# # TORNADO PLOT
-# torn <- function(ts, tb, ti, tt, state, fxn, parameters, source){# Calculations for tornado plots
-#     # Store data
-#     # Storage fir results
-#     data <- rbind(parameters, parameters)
-#     rownames(data) <- c('+1%', '-1%')
-#       # Calculate with default data set
-#       out <- calc(ts=ts, tb=tb, ti=ti, state=state, fxn=regr, parameters=parameters, source=source)
-#       # Extract result
-#       def <- out[which(out$time==tt & out$variable=="int"),"value"]
-#     for (i in 1:16){
-#       # Increasing and decreasing each parameter in turn
-#       parametersM = parameters
-#       parametersL = parameters
-#       parametersM[i] = parametersM[i] + range*parametersM[i]
-#       parametersL[i] = parametersL[i] - range*parametersL[i]
-#       # Calculating with increased and decreased parameters
-#         outM <- calc(ts = ts, tb = tb, ti=ti, state = state, fxn = regr, parameters = parametersM, source = source)
-#       outL <- calc(ts = ts, tb = tb, ti=ti, state = state, fxn = regr, parameters = parametersL, source = source)
-#       # Extract results
-#         outM <- (outM[which(outM$time==tt & outM$variable=="int"),"value"] - def) / def
-#       outL <- (outL[which(outL$time==tt & outL$variable=="int"),"value"] - def) / def
-#       data[1, i] <- outM
-#       data[2, i] <- outL
-#     }
-#     return(data)
-# }
-# 
-# 
-# {dev.control('enable')
-#   x <- seq(-0.01,0.01, length=10)
-#   ORD = order(abs(dat[2,]-dat[1,]))
-#   # Bar colours: black = increase in parameter value, white = decrease in parameter value
-#   barplot(dat[1,ORD], horiz=T, las=1, xlim=c(-0.01,0.01), xaxt='n', ylab='', beside=T, col=c('black'))
-#   barplot(dat[2,ORD], horiz=T, las=1, xlim=c(-0.01,0.01), xaxt='n', ylab='', beside=T, col=c('white'), add=TRUE)
-#   axis(1, at=pretty(x), lab=paste0(pretty(x)*100,"%"), las=TRUE)}
-# plot.torn = recordPlot()
+### TORNADO  ###############################################################################################################
+dat <- torn(time=5, variable="int", range=0.01, parameters=paramR)
+{dev.control('enable')
+  x <- seq(-0.01,0.01, length=10)
+  ORD = order(abs(dat[2,]-dat[1,]))
+  # Bar colours: black = increase in parameter value, white = decrease in parameter value
+  barplot(dat[1,ORD], horiz=T, las=1, xlim=c(-0.02,0.02), xaxt='n', ylab='', beside=T, col=c('black'))
+  barplot(dat[2,ORD], horiz=T, las=1, xlim=c(-0.02,0.02), xaxt='n', ylab='', beside=T, col=c('white'), add=TRUE)
+  axis(1, at=pretty(x), lab=paste0(pretty(x)*100,"%"), las=TRUE)}
+plot.torn = recordPlot()
