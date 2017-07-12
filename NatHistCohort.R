@@ -61,7 +61,7 @@ regr <- function(t, state, parameters){
 calc <- function(parameters){
   # Fixed parameters (zero rates, non-TB mortality)
   # Zero rates
-  parameters <- c(parameters, Zs=0.00, Qz=0.00, w=0.01, Ek=0.95, Kr=0.0)
+  parameters <- c(parameters, Zs=0.00, Qz=0.00, w=0.01, Ek=0.95, Kr=0.0, Cm=0.33, Ym=0.33)
   # Run simulation, incorporating periods with different notification rates into disease dynamics, & calculate output
   # Initial states
   state <- c(K=100000*unname(parameters["Ek"]), R=0, Z=0, Q=100000*(1-unname(parameters["Ek"])), S=0, C=0, Y=0, D=0, M=0, W=0)
@@ -106,7 +106,7 @@ regrcost <- function(parameters){
 # TRANSFORM
 regrcost2 <- function(lpars){
   # Takes log(parameters) as input, fixes some, calculates cost
-  regrcost(c(exp(lpars), Zq=0.02, Zk=0.01, Sz=0.01, Sc=2.00, Cs=1.00, Cy=2.00, Cm=0.33, Ym=0.33, Yc=0.10))}
+  regrcost(c(exp(lpars), Kz=0.02, Qs=2.50, Sz=0.01, Sq=1.00, Cs=1.00, Cy=2.00, Yc=0.1))}
 # TORNADO PLOT
 torn <- function(time, variable, range, parameters){# Calculations for tornado plots
   # Storage for results
@@ -138,9 +138,9 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); li
 # PARAMETER VALUES
   # Ax = rate from compartment A to compartment X
   # No regression  
-  paramN <- c(Kz=0.01, Zk=0.00, Zq=0.01, Qs=1.50, Sz=0.00, Sq=0.00, Sc=1.00, Cs=0.00, Cy=1.00, Cm=0.10, Yc=0.00, Ym=0.50)
+  paramN <- c(Kz=0.01, Zk=0.00, Zq=0.01, Qs=1.50, Sz=0.00, Sq=0.00, Sc=1.00, Cs=0.00, Cy=1.00, Yc=0.00)
   # Regression
-  paramR <- c(Kz=0.02, Zk=0.01, Zq=0.02, Qs=2.50, Sz=0.01, Sq=1.00, Sc=2.00, Cs=1.00, Cy=2.00, Cm=0.33, Yc=0.10, Ym=0.33)
+  paramR <- c(Kz=0.02, Zk=0.01, Zq=0.02, Qs=2.50, Sz=0.01, Sq=1.00, Sc=2.00, Cs=1.00, Cy=2.00, Yc=0.10)
 # DATA
   # sd gives weighting, so that the total data on eg interval since conversion = total data on incidence after 5 years
   # Data on the interval since conversion
@@ -231,19 +231,20 @@ plot.torn = recordPlot()
   # Sensitivity functions (similar to tornado plot, look at L1 & L2)
   Sfun <- sensFun(regrcost, c(paramR))
   summary(Sfun)
-  plot(Sfun, which=c("inc","int"), xlab="time", lwd=2)
-  pairs(Sfun, which=c("inc","int"), col=c("blue","green"))
+  # plot(Sfun, which=c("inc","int"), xlab="time", lwd=2)
+  # pairs(Sfun, which=c("inc","int"), col=c("blue","green"))
   # Collinearity identifying how many parameters are not collinear
   ident <- collin(Sfun)
-  identY <- ident[!(ident$collinearity > 15), ]
-  plot(identY, log="y")
+  identY <- ident[!(ident$collinearity>15), ]
+  identX <- identY[!(identY$N<max(identY$N)), ]
+  # plot(identY, log="y")
   # Fix certain parameters
-  Pars <- paramR[c(3, 6, 8)]
+  Pars <- paramR[c(2, 3, 7)]
   Fit <- modFit(f=regrcost2, p=log(Pars))
   exp(coef(Fit))
   ## Comparison of before and after fitting
-  # ini <- calc(parameters = c(Pars, Ek=0.95, Kr=0.10, Zk=0.01, Zq=0.02, Sz=0.01, Sc=2.00, Cs=1.00, Cy=2.00, Cm=0.33, Ym=0.33, Yc=0.10))
-  # final <- calc(parameters = c(exp(coef(Fit)), Ek=0.95, Kr=0.10, Zk=0.01, Zq=0.02, Sz=0.01, Sc=2.00, Cs=1.00, Cy=2.00, Cm=0.33, Ym=0.33, Yc=0.10))
+  # ini <- calc(parameters = c(Pars, Zk=0.01, Zq=0.02, Sz=0.01, Sc=2.00, Cs=1.00, Cy=2.00, Yc=0.10))
+  # final <- calc(parameters = c(exp(coef(Fit)), Zk=0.01, Zq=0.02, Sz=0.01, Sc=2.00, Cs=1.00, Cy=2.00, Yc=0.10))
   ## Plot results
   # par(mfrow = c(1,2))
   # plot(dataINC, xlab = "time", ylab = "incidence")
