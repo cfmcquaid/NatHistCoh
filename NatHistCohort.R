@@ -61,7 +61,7 @@ regr <- function(t, state, parameters){
 calc <- function(parameters){
   # Fixed parameters (zero rates, non-TB mortality)
   # Zero rates
-  parameters <- c(parameters, Zs=0.00, Qz=0.00, w=0.01, Ek=0.95, Kr=0.0, Cm=0.33, Ym=0.33)
+  parameters <- c(parameters, Zs=0.00, Qz=0.00, w=0.02, Ek=0.95, Kr=0.0, Cm=0.33, Ym=0.33)
   # Run simulation, incorporating periods with different notification rates into disease dynamics, & calculate output
   # Initial states
   state <- c(K=100000*unname(parameters["Ek"]), R=0, Z=0, Q=100000*(1-unname(parameters["Ek"])), S=0, C=0, Y=0, D=0, M=0, W=0)
@@ -140,7 +140,7 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); li
   # No regression  
   paramN <- c(Kz=0.01, Zk=0.00, Zq=0.01, Qs=1.50, Sz=0.00, Sq=0.00, Sc=1.00, Cs=0.00, Cy=1.00, Yc=0.00)
   # Regression
-  paramR <- c(Kz=0.02, Zk=0.01, Zq=0.02, Qs=2.50, Sz=0.01, Sq=1.00, Sc=2.00, Cs=1.00, Cy=2.00, Yc=0.10)
+  paramR <- c(Kz=0.5, Zk=0.5, Zq=0.05, Qs=2.00, Sz=0.05, Sq=1.00, Sc=2.00, Cs=1.00, Cy=2.00, Yc=0.10)
 # DATA
   # sd gives weighting, so that the total data on eg interval since conversion = total data on incidence after 5 years
   # Data on the interval since conversion
