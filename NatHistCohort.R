@@ -137,10 +137,7 @@ torn <- function(time, variable, range, parameters){# Calculations for tornado p
 library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); library("pryr"); library("FME");
 # PARAMETER VALUES
   # Ax = rate from compartment A to compartment X
-  # No regression  
-  paramN <- c(Kz=0.01, Zk=0.00, Zq=0.01, Qs=1.50, Sz=0.00, Sq=0.00, Sc=1.00, Cs=0.00, Cy=1.00, Yc=0.00)
-  # Regression
-  paramR <- c(Kz=0.5, Zk=0.5, Zq=0.05, Qs=2.00, Sz=0.05, Sq=1.00, Sc=2.00, Cs=1.00, Cy=2.00, Yc=0.10)
+  paramR <- c(Kz=0.5, Zk=0.5, Zq=0.05, Qs=2.00, Sz=0.05, Sq=1.00, Sc=2.00, Cs=0.30, Cy=2.00, Yc=0.30)
 # DATA
   # sd gives weighting, so that the total data on eg interval since conversion = total data on incidence after 5 years
   # Data on the interval since conversion
