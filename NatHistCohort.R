@@ -6,11 +6,11 @@
 #                        M             # M - Death (due to disease)
 #                       ^ ^            # W - Background mortality
 #                      /   \           #
-#      -> Q <-> S <-> C <-> Y          # Q - Failed granuloma, S - Subclinical, C - Minimal (C+S-), Y - Disseminated (C+S+, symptomatic)
+#      -> F <-> S <-> L <-> H          # F - Failed granuloma, S - Subclinical disease, L - Low intensity disease (C+S-), H - High intensity disease (C+S+, symptomatic)
 #     /    \    ^      \   /           #
-#    E       \  |       v v            # E - Exposed, instantly a proportion Ek move to K, & 1-Ek to Q
-#     \        \v        D             # D - Diagnosed
-#      -> K <-> Z                      # K - Controlled granuloma, Z- Leaky granuloma,
+#    I       \  |       v v            # I - Infected, instantly a proportion Ic move to C, & 1-Ic to F
+#     \        \v        D             # D - Diagnosed/treated
+#      -> C <-> U                      # C - Controlled granuloma, U - Unstable granuloma,
 #         |                            #
 #         v                            #
 #         R                            # R - Sterilized granuloma (self-cure)
@@ -31,7 +31,7 @@ setwd("C:/Users/cfmcquaid/Simulations")
 
 #Next steps
 # 1. get the prop inc disease after 5 years to 5%
-###   How: play with Eq values, OR increase progression parameters
+###   How: play with Ic values, OR increase progression parameters
 # 2. achieve 1 + start higher and sharper decrease in early years
 ###   How: change initial states to more realistic point, based on what prev of disease would be at screening
 ###   Also increase progression rates, while decreasing proportion that goes into the fast pathway
@@ -43,39 +43,38 @@ setwd("C:/Users/cfmcquaid/Simulations")
 regr <- function(t, state, parameters){
   with(as.list(c(state, parameters)), {
     # rates of change
-    dK <- + Zk*Z - (Kz + Kr + w)*K
-    dR <- + Kr*K
-    dZ <- + Kz*K + Sz*S + Qz*Q - (Zk + Zs + Zq + w)*Z
-    dQ <- + Sq*S + Zq*Z - (Qs + Qz + w)*Q
-    dS <- + Qs*Q + Cs*C + Zs*Z - (Sc + Sq + Sz + w)*S
-    dC <- + Sc*S + Yc*Y - (Cs + Cy + Cm + Cd + w)*C
-    dY <- + Cy*C -(Yc + Ym + Yd + w)*Y
-    dD <- + Cd*C + Yd*Y
-    dM <- + Ym*Y + Cm*C
-    dW <- + (K + Z + Q + S + C + Y)*w
+    dC <- + Uc*U - (Cu + Cr + w)*C
+    dR <- + Cr*C
+    dU <- + Cu*C + Su*S + Fu*F - (Uc + Us + Uf + w)*U
+    dF <- + Sf*S + Uf*U - (Fs + Fu + w)*F
+    dS <- + Fs*F + Ls*L + Us*U - (Sl + Sf + Su + w)*S
+    dL <- + Sl*S + Hl*H - (Ls + Lh + Lm + Ld + w)*L
+    dH <- + Lh*L -(Hl + Hm + Hd + w)*H
+    dD <- + Ld*L + Hd*H
+    dM <- + Hm*H + Lm*L
+    dW <- + (C + U + F + S + L + H)*w
     # return the rate of change
-    list(c(dK, dR, dZ, dQ, dS, dC, dY, dD, dM, dW))
+    list(c(dC, dR, dU, dF, dS, dL, dH, dD, dM, dW))
   })
 }
 # SIMULATE
 calc <- function(parameters){
   # Fixed parameters (zero rates, non-TB mortality)
-  # Zero rates
-  parameters <- c(parameters, Zs=0.00, Qz=0.00, w=0.02, Ek=0.95, Kr=0.0, Cm=0.33, Ym=0.33)
+  parameters <- c(parameters, Us=0.00, Fu=0.00, w=0.02, Ic=0.95, Cr=0.0, Lm=0.33, Hm=0.33)
   # Run simulation, incorporating periods with different notification rates into disease dynamics, & calculate output
   # Initial states
-  state <- c(K=100000*unname(parameters["Ek"]), R=0, Z=0, Q=100000*(1-unname(parameters["Ek"])), S=0, C=0, Y=0, D=0, M=0, W=0)
+  state <- c(C=100000*unname(parameters["Ic"]), R=0, U=0, F=100000*(1-unname(parameters["Ic"])), S=0, L=0, H=0, D=0, M=0, W=0)
   # Times for different simulation periods (i.e. with different notification rates)
   time <- list(step=0.01, b1=1, b2=1, b3=10)
   # Run for different periods in which the notification rate changes
     # Calculate initial state up until diagnosis
-    out1 <- ode(y=state, times=seq(0,time$b1,by=time$step), func=regr, parms=c(parameters,Cd=0,Yd=0))
+    out1 <- ode(y=state, times=seq(0,time$b1,by=time$step), func=regr, parms=c(parameters,Ld=0,Hd=0))
     stateb1 <- out1[time$b1/time$step+1, 2:ncol(out1)]
     # Calculate coprevalent cases
-    out2 <- ode(y=stateb1, times=seq(time$b1,time$b1+time$b2,by=time$step), func=regr, parms=c(parameters,Cd=2,Yd=2))
+    out2 <- ode(y=stateb1, times=seq(time$b1,time$b1+time$b2,by=time$step), func=regr, parms=c(parameters,Ld=2,Hd=2))
     stateb2 <- out2[time$b2/time$step+1, 2:ncol(out2)]
     # Calculate remaining time
-    out3 <- ode(y=stateb2, times=seq(time$b1+time$b2,time$b1+time$b2+time$b3,by=time$step), func=regr, parms=c(parameters, Cd=1, Yd=1))
+    out3 <- ode(y=stateb2, times=seq(time$b1+time$b2,time$b1+time$b2+time$b3,by=time$step), func=regr, parms=c(parameters, Ld=1, Hd=1))
   # Compile output and remove burn period & repeated timesteps
   out <- rbind(out2, out3)
   out <- out[-c(seq(1,time$b2/time$step,by=1), time$b2/time$step+2),]
@@ -106,7 +105,7 @@ regrcost <- function(parameters){
 # TRANSFORM
 regrcost2 <- function(lpars){
   # Takes log(parameters) as input, fixes some, calculates cost
-  regrcost(c(exp(lpars), Kz=0.02, Qs=2.50, Sz=0.01, Sq=1.00, Cs=1.00, Cy=2.00, Yc=0.1))}
+  regrcost(c(exp(lpars), Cu=0.02, Fs=2.50, Su=0.01, Sf=1.00, Ls=1.00, Lh=2.00, Hl=0.1))}
 # TORNADO PLOT
 torn <- function(time, variable, range, parameters){# Calculations for tornado plots
   # Storage for results
@@ -137,7 +136,7 @@ torn <- function(time, variable, range, parameters){# Calculations for tornado p
 library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); library("pryr"); library("FME");
 # PARAMETER VALUES
   # Ax = rate from compartment A to compartment X
-  paramR <- c(Kz=0.5, Zk=0.5, Zq=0.05, Qs=2.00, Sz=0.05, Sq=1.00, Sc=2.00, Cs=0.30, Cy=2.00, Yc=0.30)
+  paramR <- c(Cu=0.5, Uc=0.5, Uf=0.05, Fs=2.00, Su=0.05, Sf=1.00, Sl=2.00, Ls=0.30, Lh=2.00, Hl=0.30)
 # DATA
   # sd gives weighting, so that the total data on eg interval since conversion = total data on incidence after 5 years
   # Data on the interval since conversion
@@ -151,10 +150,10 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); li
 # CALCULATION
   out <- calc(paramR)
 # PARMETERS
-  p <- cbind(prog = c(paramR["Kz"], paramR["Zq"], paramR["Qs"], paramR["Sc"], paramR["Cy"], NA),
-            reg = c(NA, paramR["Zk"], NA, paramR["Sq"], paramR["Cs"], paramR["Yc"]),
-            other = c(paramR["Kr"], NA, NA, paramR["Sz"], paramR["Cm"], paramR["Ym"]))
-  row.names(p) <- c("K", "Z", "Q", "S", "C", "Y")
+  p <- cbind(prog = c(paramR["Cu"], paramR["Uf"], paramR["Fs"], paramR["Sl"], paramR["Lh"], NA),
+            reg = c(NA, paramR["Uc"], NA, paramR["Sf"], paramR["Ls"], paramR["Hl"]),
+            other = c(paramR["Cr"], NA, NA, paramR["Su"], paramR["Lm"], paramR["Hm"]))
+  row.names(p) <- c("C", "U", "F", "S", "L", "H")
 ### PLOTS #################################################################################################################
 outplot <- melt(out, id.vars=c("time"))
 # Choose outputs to compare, labels, line colours & types, y-legend, scale
@@ -174,27 +173,27 @@ int <- {list(out = c("int"),
   sca = 1)}
 # SINK
 sink <- {list(out = c("R","D","M","W"),
-  lab = c("R - Sterilized granuloma","D - Diagnosed","M - Death (TB)","W - Death (other)"),
+  lab = c("R - Sterilized granuloma","D - Diagnosed/Treated","M - Death (TB)","W - Death (other)"),
   leg = c("Sink size (individuals)"),
   typ = c("solid", "solid","dashed", "dashed"),
   col = c("navy","blue","maroon","red"),
   sca = 100000)}
 # SLOW
-slow <- {list(out = c("K","Z"),
-  lab = c("K - Controlled granuloma","Z - Leaky granuloma"),
+slow <- {list(out = c("C","U"),
+  lab = c("C - Controlled granuloma","U - Unstable granuloma"),
   leg = c("Slow size (individuals)"),
   typ = c("solid", "solid","dashed", "dashed"),
   col = c("navy","maroon"),
   sca = 100000)}
 # FAST
-fast <- {list(out = c("Q","S","C","Y"),
-  lab = c("Q - Failed granuloma","S - Subclinical","C - Minimal","Y - Disseminated"),
+fast <- {list(out = c("F","S","L","H"),
+  lab = c("F - Failed granuloma","S - Subclinical disease","L - Low intensity disease","H - High intensity disease"),
   leg = c("Fast size (individuals)"),
   typ = c("solid", "solid","dashed", "dashed"),
   col = c("navy","blue","red","maroon"),
   sca = 1000)}
 # PLOT
-comp <- sink
+comp <- fast
 plot.out <- {ggplot(outplot[outplot$variable%in%comp$out,], aes(time,value,colour=variable,linetype=variable)) +
   # Lineplot of model results
   geom_line(size=2) +
@@ -240,8 +239,8 @@ plot.torn = recordPlot()
   Fit <- modFit(f=regrcost2, p=log(Pars))
   exp(coef(Fit))
   ## Comparison of before and after fitting
-  # ini <- calc(parameters = c(Pars, Zk=0.01, Zq=0.02, Sz=0.01, Sc=2.00, Cs=1.00, Cy=2.00, Yc=0.10))
-  # final <- calc(parameters = c(exp(coef(Fit)), Zk=0.01, Zq=0.02, Sz=0.01, Sc=2.00, Cs=1.00, Cy=2.00, Yc=0.10))
+  # ini <- calc(parameters = c(Pars, Uc=0.01, Uf=0.02, Su=0.01, Sl=2.00, Ls=1.00, Lh=2.00, Hl=0.10))
+  # final <- calc(parameters = c(exp(coef(Fit)), Uc=0.01, Uf=0.02, SU=0.01, Scl=2.00, Ls=1.00, Lh=2.00, Hl=0.10))
   ## Plot results
   # par(mfrow = c(1,2))
   # plot(dataINC, xlab = "time", ylab = "incidence")
