@@ -60,10 +60,10 @@ regr <- function(t, state, parameters){
 # SIMULATE
 calc <- function(parameters){
   # Fixed parameters (zero rates, non-TB mortality)
-  #parameters <- c(parameters, Us=0.00, Uc=0.00, Fu=0.00, Su=0.00, Sf=0.00, Hl=0.00, Ls=0.00, w=0.02, Ic=0.95, Cr=0.0, Lm=0.33, Hm=0.33) # Baseline
+  parameters <- c(parameters, Us=0.00, Uc=0.00, Fu=0.00, Su=0.00, Sf=0.00, Hl=0.00, Ls=0.00, w=0.02, Ic=0.95, Cr=0.0, Lm=0.33, Hm=0.33) # Baseline
   #parameters <- c(parameters, Us=0.00, Uc=0.00, Fu=0.00, Su=0.00, Sf=0.00, w=0.02, Ic=0.95, Cr=0.0, Lm=0.33, Hm=0.33) # Regression in disease states
   #parameters <- c(parameters, Us=0.00, Uc=0.00, Fu=0.00, Su=0.00, Sf=0.00, Hl=0.00, Ls=0.00, w=0.02, Ic=0.95, Lm=0.33, Hm=0.33) # Clearance of infection
-  parameters <- c(parameters, Us=0.00, Fu=0.00, Hl=0.00, Ls=0.00, w=0.02, Ic=0.95, Cr=0.0, Lm=0.33, Hm=0.33) # Dynamic latent infection
+  #parameters <- c(parameters, Us=0.00, Fu=0.00, Hl=0.00, Ls=0.00, w=0.02, Ic=0.95, Cr=0.0, Lm=0.33, Hm=0.33) # Dynamic latent infection
   #parameters <- c(parameters, Us=0.00, Fu=0.00, w=0.02, Ic=0.95, Lm=0.33, Hm=0.33) # Regression, clearance, dynamic latency
   # Run simulation, incorporating periods with different notification rates into disease dynamics, & calculate output
   # Initial states
@@ -110,10 +110,10 @@ regrcost <- function(parameters){
 # TRANSFORM
 regrcost2 <- function(lpars){
   # Takes log(parameters) as input, fixes some, calculates cost
-  #regrcost(c(exp(lpars)))} # Baseline
+  regrcost(c(exp(lpars)))} # Baseline
   #regrcost(c(exp(lpars), Ls=0.30, Hl=0.30))} # Regression in disease states
   #regrcost(c(exp(lpars), Cr=0.1))} # Clearance of infection
-  regrcost(c(exp(lpars), Uc=0.5, Su=0.05, Sf=1.00))} # Dynamic latent infection
+  #regrcost(c(exp(lpars), Uc=0.5, Su=0.05, Sf=1.00))} # Dynamic latent infection
   #regrcost(c(exp(lpars), Cr=0.1, Uc=0.5, Su=0.05, Sf=1.00, Ls=0.30, Hl=0.30))} # Regression, clearance, dynamic latency
 # TORNADO PLOT
 torn <- function(time, variable, range, parameters){# Calculations for tornado plots
@@ -145,10 +145,10 @@ torn <- function(time, variable, range, parameters){# Calculations for tornado p
 library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); library("pryr"); library("FME");
 # PARAMETER VALUES
   # Ax = rate from compartment A to compartment X
-  #paramR <- c(Cu=0.5, Uf=0.05, Sl=2.00, Lh=2.00) # Baseline
+  paramR <- c(Cu=0.5, Uf=0.05, Sl=2.00, Lh=2.00) # Baseline
   #paramR <- c(Cu=0.5, Uf=0.05, Sl=2.00, Ls=0.30, Lh=2.00, Hl=0.30) # Regression in disease states
   #paramR <- c(Cr=0.1, Cu=0.5, Uf=0.05, Sl=2.00, Lh=2.00) # Clearance of infection
-  paramR <- c(Cu=0.5, Uc=0.5, Uf=0.05, Su=0.05, Sf=1.00, Sl=2.00, Lh=2.00) # Dynamic latent infection
+  #paramR <- c(Cu=0.5, Uc=0.5, Uf=0.05, Su=0.05, Sf=1.00, Sl=2.00, Lh=2.00) # Dynamic latent infection
   #paramR <- c(Cr=0.1, Cu=0.5, Uc=0.5, Uf=0.05, Su=0.05, Sf=1.00, Sl=2.00, Ls=0.30, Lh=2.00, Hl=0.30) # Regression, clearance, dynamic latency
 # DATA
   # sd gives weighting, so that the total data on eg interval since conversion = total data on incidence after 5 years
@@ -183,18 +183,21 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); li
   identX <- identY[!(identY$N<max(identY$N)), ]
   plot(identY, log="y")
   # Fix certain parameters
+  Pars <- c(Cu=1,Uf=0.002,Sl=100,Lh=0.001)
+  #Original: c(Cu=0.5, Uf=0.05, Sl=2.00, Lh=2.00)
+  
   #Pars <- paramR[c(1,2,3,4)] # Baseline
   #Pars <- paramR[c(1,2,3,5)] # Regression in disease states
   #Pars <- paramR[c(2,3,4,5)] # Clearance of infection
-  Pars <- paramR[c(1,3,6,7)] # Dynamic latent infection
+  #Pars <- paramR[c(1,3,6,7)] # Dynamic latent infection
   #Pars <- paramR[c(2,4,7,9)] # Regression, clearance, dynamic latency
   Fit <- modFit(f=regrcost2, p=log(Pars))#,lower = log(c(0,0,0,0)), upper = log(c(10,2.3,2.5,2.4)))
   exp(coef(Fit))
   ## Comparison of before and after fitting
-  #ini <- calc(parameters = c(Pars)); final <- calc(parameters = c(exp(coef(Fit))))# Baseline
+  ini <- calc(parameters = c(Pars)); final <- calc(parameters = c(exp(coef(Fit))))# Baseline
   #ini <- calc(parameters = c(Pars, Ls=0.30, Hl=0.30)); final <- calc(parameters = c(exp(coef(Fit)), Ls=0.30, Hl=0.30))# Regression in disease states
   #ini <- calc(parameters = c(Pars, Cr=0.1)); final <- calc(parameters = c(exp(coef(Fit)), Cr=0.1))# Clearance of infection
-  ini <- calc(parameters = c(Pars, Uc=0.5, Su=0.05, Sf=1.00)); final <- calc(parameters = c(exp(coef(Fit)), Uc=0.5, Su=0.05, Sf=1.00))# Dynamic latent infection
+  #ini <- calc(parameters = c(Pars, Uc=0.5, Su=0.05, Sf=1.00)); final <- calc(parameters = c(exp(coef(Fit)), Uc=0.5, Su=0.05, Sf=1.00))# Dynamic latent infection
   #ini <- calc(parameters = c(Pars, Cr=0.1, Uc=0.5, Su=0.05, Sf=1.00, Ls=0.30, Hl=0.30)); final <- calc(parameters = c(exp(coef(Fit)), Cr=0.1, Uc=0.5, Su=0.05, Sf=1.00, Ls=0.30, Hl=0.30))# Regression, clearance, dynamic latency
   ## Plot results
    par(mfrow = c(2,2))
@@ -220,7 +223,7 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); li
   summary(MCMC)
   plot(MCMC, Full=TRUE)
   pairs(MCMC, nsample=500)
-  ### PLOTS #################################################################################################################
+### PLOTS #################################################################################################################
   outplot <- melt(out, id.vars=c("time"))
   # Choose outputs to compare, labels, line colours & types, y-legend, scale
   # INCIDENCE
@@ -276,7 +279,7 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); li
       theme_bw() +
       theme(legend.key.width=unit(2,"cm"), legend.justification=c(1,1), legend.position=c(.99,.99), legend.background=element_rect(size=0.5,linetype="solid",colour="black"), legend.text=element_text(size=20), legend.title=element_text(size=20), axis.text=element_text(size=15), axis.title=element_text(size=25))}
   plot.out
-  ### TORNADO  ###############################################################################################################
+### TORNADO  ###############################################################################################################
   dat <- torn(time=5, variable="int", range=0.01, parameters=paramR)
   {dev.control('enable')
     x <- seq(-0.01,0.01, length=10)
