@@ -216,13 +216,60 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); li
      legend("topright", c("data", "initial", "fitted"),lty = c(NA,2,1), pch = c(1, NA, NA))
    par(mfrow = c(1, 1))
   ## MCMC
-  var0 <- Fit$var_ms_unweighted
-  cov0 <- summary(Fit)$cov.scaled * 2.4^2/5
-  MCMC <- modMCMC(f=regrcost2, p=Fit$par, niter=5000, jump=cov0, var0=var0, wvar0=0.1, updatecov=50)
-  MCMC$pars <- exp(MCMC$pars)
-  summary(MCMC)
-  plot(MCMC, Full=TRUE)
-  pairs(MCMC, nsample=500)
+  # var0 <- Fit$var_ms_unweighted
+  # cov0 <- summary(Fit)$cov.scaled * 2.4^2/5
+  # MCMC <- modMCMC(f=regrcost2, p=Fit$par, niter=5000, jump=cov0, var0=var0, wvar0=0.1, updatecov=50)
+  # MCMC$pars <- exp(MCMC$pars)
+  # summary(MCMC)
+  # plot(MCMC, Full=TRUE)
+  # pairs(MCMC, nsample=500)
+### INTERVENTION #################################################################################################################
+   parameters <- c(exp(coef(Fit))) # Baseline
+   #parameters <- c(exp(coef(Fit)), Ls=0.30, Hl=0.30) # Regression in disease states
+   #parameters <- c(exp(coef(Fit)), Cr=0.1) # Clearance of infection
+   #parameters <- c(exp(coef(Fit)), Uc=0.5, Su=0.05, Sf=1.00) # Dynamic latent infection
+   #parameters <- c(exp(coef(Fit)), Cr=0.1, Uc=0.5, Su=0.05, Sf=1.00, Ls=0.30, Hl=0.30) # Regression, clearance, dynamic latency
+   interv <- function(parameters){
+     # Fixed parameters (zero rates, non-TB mortality)
+     parameters <- c(parameters, Us=0.00, Uc=0.00, Fu=0.00, Su=0.00, Sf=0.00, Hl=0.00, Ls=0.00, w=0.02, Ic=0.95, Cr=0.0, Lm=0.33, Hm=0.33) # Baseline
+     #parameters <- c(parameters, Us=0.00, Uc=0.00, Fu=0.00, Su=0.00, Sf=0.00, w=0.02, Ic=0.95, Cr=0.0, Lm=0.33, Hm=0.33) # Regression in disease states
+     #parameters <- c(parameters, Us=0.00, Uc=0.00, Fu=0.00, Su=0.00, Sf=0.00, Hl=0.00, Ls=0.00, w=0.02, Ic=0.95, Lm=0.33, Hm=0.33) # Clearance of infection
+     #parameters <- c(parameters, Us=0.00, Fu=0.00, Hl=0.00, Ls=0.00, w=0.02, Ic=0.95, Cr=0.0, Lm=0.33, Hm=0.33) # Dynamic latent infection
+     #parameters <- c(parameters, Us=0.00, Fu=0.00, w=0.02, Ic=0.95, Lm=0.33, Hm=0.33) # Regression, clearance, dynamic latency
+     # Run simulation, incorporating periods with different notification rates into disease dynamics, & calculate output
+     # Initial states
+     state <- c(C=100000*unname(parameters["Ic"]), R=0, U=0, FG=100000*(1-unname(parameters["Ic"])), S=0, L=0, H=0, D=0, M=0, W=0)
+     # Times for different simulation periods (i.e. with different notification rates)
+     time <- list(step=1, b1=1, b2=1, b3=10, b4=5)
+     # Run for different periods in which the notification rate changes
+     # Calculate initial state up until diagnosis
+     out1 <- ode(y=state, times=seq(0,time$b1,by=time$step), func=regr, parms=c(parameters,Ld=0,Hd=0))
+     stateb1 <- out1[time$b1/time$step+1, 2:ncol(out1)]
+     # Calculate coprevalent cases
+     out2 <- ode(y=stateb1, times=seq(time$b1,time$b1+time$b2,by=time$step), func=regr, parms=c(parameters,Ld=2,Hd=2))
+     stateb2 <- out2[time$b2/time$step+1, 2:ncol(out2)] #DO I NEED TO SET DIAGNOSED TO ZERO HERE?
+     # Calculate remaining until intervention time
+     out3 <- ode(y=stateb2, times=seq(time$b1+time$b2,time$b1+time$b2+time$b3,by=time$step), func=regr, parms=c(parameters, Ld=1, Hd=1))
+     stateb3 <- out3[time$b3/time$step+1, 2:ncol(out3)]
+     # Calculate after intervention
+     out4 <- ode(y=stateb3, times=seq(time$b1+time$b2+time$b3,time$b1+time$b2+time$b3+time$b4,by=time$step), func=regr, parms=c(parameters, Ld=1, Hd=1))
+     # Compile output and remove burn period & repeated timesteps
+     out <- rbind(out2, out3, out4)
+     out <- out[-c(seq(1,time$b2/time$step,by=1), time$b2/time$step+2, time$b3/time$step+3),]
+     out[,"time"] <- out[,"time"] - time$b1
+     out <- as.data.frame(out)
+     # Calculate incidence
+     out$inc <- (out$D-c(0,out$D[-nrow(out)]))/100000
+     # Calculate interval from conversion
+     out$int <- (out$inc*100000)/out$D[nrow(out)]
+     # Calculate cumulative incidence
+     out$cum <- out$D/100000
+     # Calculate cumulative incidence for Ragonnet data
+     out$rag <- out$D/100000
+     # Produce output for comparison with data
+     return(out)
+   }  
+out <- interv(parameters)
 ### PLOTS #################################################################################################################
   outplot <- melt(out, id.vars=c("time"))
   # Choose outputs to compare, labels, line colours & types, y-legend, scale
