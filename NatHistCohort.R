@@ -61,7 +61,7 @@ regr <- function(t, state, parameters){
 #baseline
 calcB <- function(parameters){
   # Fixed parameters (zero rates, non-TB mortality)
-  parameters <- c(parameters, Us=0.00, Uc=0.00, Fu=0.00, Su=0.00, Sf=0.00, Hl=0.00, Ls=0.00, w=0.02, Ic=0.95, Cr=0.0, Lm=0.33, Hm=0.33) # Baseline
+  parameters <- c(parameters, Us=0.00, Uc=0.00, Fu=0.00, Su=0.00, Sf=0.00, Hl=0.00, Ls=0.00, w=0.02, Ic=0.93, Cr=0.0, Lm=0.33, Hm=0.33) # Baseline
   #parameters <- c(parameters, Us=0.00, Uc=0.00, Fu=0.00, Su=0.00, Sf=0.00, w=0.02, Ic=0.95, Cr=0.0, Lm=0.33, Hm=0.33) # Regression in disease states
   #parameters <- c(parameters, Us=0.00, Uc=0.00, Fu=0.00, Su=0.00, Sf=0.00, Hl=0.00, Ls=0.00, w=0.02, Ic=0.95, Lm=0.33, Hm=0.33) # Clearance of infection
   #parameters <- c(parameters, Us=0.00, Fu=0.00, Hl=0.00, Ls=0.00, w=0.02, Ic=0.95, Cr=0.0, Lm=0.33, Hm=0.33) # Dynamic latent infection
@@ -99,7 +99,7 @@ calcB <- function(parameters){
 #regression
 calcR <- function(parameters){
   # Fixed parameters (zero rates, non-TB mortality)
-  parameters <- c(parameters, Us=0.00, Uc=0.00, Fu=0.00, Su=0.00, Sf=0.00, w=0.02, Ic=0.95, Cr=0.0, Lm=0.33, Hm=0.33) # Regression in disease states
+  parameters <- c(parameters, Us=0.00, Uc=0.00, Fu=0.00, Su=0.00, Sf=0.00, w=0.02, Ic=0.93, Cr=0.0, Lm=0.33, Hm=0.33) # Regression in disease states
   # Run simulation, incorporating periods with different notification rates into disease dynamics, & calculate output
   # Initial states
   state <- c(C=100000*unname(parameters["Ic"]), R=0, U=0, FG=100000*(1-unname(parameters["Ic"])), S=0, L=0, H=0, D=0, M=0, W=0)
@@ -133,7 +133,7 @@ calcR <- function(parameters){
 #clearance
 calcC <- function(parameters){
   # Fixed parameters (zero rates, non-TB mortality)
-  parameters <- c(parameters, Us=0.00, Uc=0.00, Fu=0.00, Su=0.00, Sf=0.00, Hl=0.00, Ls=0.00, w=0.02, Ic=0.95, Lm=0.33, Hm=0.33) # Clearance of infection
+  parameters <- c(parameters, Us=0.00, Uc=0.00, Fu=0.00, Su=0.00, Sf=0.00, Hl=0.00, Ls=0.00, w=0.02, Ic=0.93, Lm=0.33, Hm=0.33) # Clearance of infection
   # Run simulation, incorporating periods with different notification rates into disease dynamics, & calculate output
   # Initial states
   state <- c(C=100000*unname(parameters["Ic"]), R=0, U=0, FG=100000*(1-unname(parameters["Ic"])), S=0, L=0, H=0, D=0, M=0, W=0)
@@ -167,7 +167,7 @@ calcC <- function(parameters){
 #dynamic
 calcD <- function(parameters){
   # Fixed parameters (zero rates, non-TB mortality)
-  parameters <- c(parameters, Us=0.00, Fu=0.00, Hl=0.00, Ls=0.00, w=0.02, Ic=0.95, Cr=0.0, Lm=0.33, Hm=0.33) # Dynamic latent infection
+  parameters <- c(parameters, Us=0.00, Fu=0.00, Sf=0.00, Uc=0.00, Hl=0.00, Ls=0.00, w=0.02, Ic=0.93, Cr=0.0, Lm=0.33, Hm=0.33) # Dynamic latent infection
   # Run simulation, incorporating periods with different notification rates into disease dynamics, & calculate output
   # Initial states
   state <- c(C=100000*unname(parameters["Ic"]), R=0, U=0, FG=100000*(1-unname(parameters["Ic"])), S=0, L=0, H=0, D=0, M=0, W=0)
@@ -201,7 +201,7 @@ calcD <- function(parameters){
 #all
 calcA <- function(parameters){
   # Fixed parameters (zero rates, non-TB mortality)
-  parameters <- c(parameters, Us=0.00, Fu=0.00, w=0.02, Ic=0.95, Lm=0.33, Hm=0.33) # Regression, clearance, dynamic latency
+  parameters <- c(parameters, Us=0.00, Fu=0.00, Sf=0.00, Uc=0.00, w=0.02, Ic=0.93, Lm=0.33, Hm=0.33) # Regression, clearance, dynamic latency
   # Run simulation, incorporating periods with different notification rates into disease dynamics, & calculate output
   # Initial states
   state <- c(C=100000*unname(parameters["Ic"]), R=0, U=0, FG=100000*(1-unname(parameters["Ic"])), S=0, L=0, H=0, D=0, M=0, W=0)
@@ -238,60 +238,60 @@ regrcostB <- function(parameters){
   # A cost model comparing the output for a given parameter set to the data
   out <- calc(parameters)
   # Run for each different data set
-  cost1 <- modCost(model=out, obs=dataINC, err="sd")
-  cost2 <- modCost(model=out, obs=dataINT, cost=cost1, err="sd")
-  cost3 <- modCost(model=out, obs=dataCUM, cost=cost2, err="sd")
+  cost1 <- modCost(model=out, obs=dataINT, err="sd")
+  cost2 <- modCost(model=out, obs=dataCUM, cost=cost1, err="sd")
+  cost3 <- modCost(model=out, obs=dataINC, cost=cost2, err="sd")
   cost4 <- modCost(model=out, obs=dataRAG, cost=cost3, err="sd")
   # Run for each different data set
-  return(cost3)
+  return(cost2)
 }
 #regression
 regrcostR <- function(parameters){
   # A cost model comparing the output for a given parameter set to the data
   out <- calcR(parameters)
   # Run for each different data set
-  cost1 <- modCost(model=out, obs=dataINC, err="sd")
-  cost2 <- modCost(model=out, obs=dataINT, cost=cost1, err="sd")
-  cost3 <- modCost(model=out, obs=dataCUM, cost=cost2, err="sd")
+  cost1 <- modCost(model=out, obs=dataINT, err="sd")
+  cost2 <- modCost(model=out, obs=dataCUM, cost=cost1, err="sd")
+  cost3 <- modCost(model=out, obs=dataINC, cost=cost2, err="sd")
   cost4 <- modCost(model=out, obs=dataRAG, cost=cost3, err="sd")
   # Run for each different data set
-  return(cost3)
+  return(cost2)
 }
 #clearance
 regrcostC <- function(parameters){
   # A cost model comparing the output for a given parameter set to the data
   out <- calcC(parameters)
   # Run for each different data set
-  cost1 <- modCost(model=out, obs=dataINC, err="sd")
-  cost2 <- modCost(model=out, obs=dataINT, cost=cost1, err="sd")
-  cost3 <- modCost(model=out, obs=dataCUM, cost=cost2, err="sd")
+  cost1 <- modCost(model=out, obs=dataINT, err="sd")
+  cost2 <- modCost(model=out, obs=dataCUM, cost=cost1, err="sd")
+  cost3 <- modCost(model=out, obs=dataINC, cost=cost2, err="sd")
   cost4 <- modCost(model=out, obs=dataRAG, cost=cost3, err="sd")
   # Run for each different data set
-  return(cost3)
+  return(cost2)
 }
 #dynamic
 regrcostD <- function(parameters){
   # A cost model comparing the output for a given parameter set to the data
   out <- calcD(parameters)
   # Run for each different data set
-  cost1 <- modCost(model=out, obs=dataINC, err="sd")
-  cost2 <- modCost(model=out, obs=dataINT, cost=cost1, err="sd")
-  cost3 <- modCost(model=out, obs=dataCUM, cost=cost2, err="sd")
+  cost1 <- modCost(model=out, obs=dataINT, err="sd")
+  cost2 <- modCost(model=out, obs=dataCUM, cost=cost1, err="sd")
+  cost3 <- modCost(model=out, obs=dataINC, cost=cost2, err="sd")
   cost4 <- modCost(model=out, obs=dataRAG, cost=cost3, err="sd")
   # Run for each different data set
-  return(cost3)
+  return(cost2)
 }
 #all
 regrcostA <- function(parameters){
   # A cost model comparing the output for a given parameter set to the data
   out <- calcA(parameters)
   # Run for each different data set
-  cost1 <- modCost(model=out, obs=dataINC, err="sd")
-  cost2 <- modCost(model=out, obs=dataINT, cost=cost1, err="sd")
-  cost3 <- modCost(model=out, obs=dataCUM, cost=cost2, err="sd")
+  cost1 <- modCost(model=out, obs=dataINT, err="sd")
+  cost2 <- modCost(model=out, obs=dataCUM, cost=cost1, err="sd")
+  cost3 <- modCost(model=out, obs=dataINC, cost=cost2, err="sd")
   cost4 <- modCost(model=out, obs=dataRAG, cost=cost3, err="sd")
   # Run for each different data set
-  return(cost3)
+  return(cost2)
 }
 # TRANSFORM
 #baseline
@@ -309,11 +309,11 @@ regrcostC(c(exp(lpars), Cr=0.1))} # Clearance of infection
 #dynamic
 regrcostD2 <- function(lpars){
   # Takes log(parameters) as input, fixes some, calculates cost
-regrcostD(c(exp(lpars), Uc=0.5, Su=0.05, Sf=1.00))} # Dynamic latent infection
+regrcostD(c(exp(lpars), Su=0.005))} # Dynamic latent infection
 #all
 regrcostA2 <- function(lpars){
   # Takes log(parameters) as input, fixes some, calculates cost
-regrcost(c(exp(lpars), Cr=0.1, Uc=0.5, Su=0.05, Sf=1.00, Ls=0.30, Hl=0.30))} # Regression, clearance, dynamic latency
+regrcost(c(exp(lpars), Cr=0.1, Su=0.005, Ls=0.30, Hl=0.30))} # Regression, clearance, dynamic latency
 # TORNADO PLOT
 torn <- function(time, variable, range, parameters){# Calculations for tornado plots
   # Storage for results
@@ -354,7 +354,7 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); li
   # Data on the interval since conversion
   dataINT <- cbind(time=seq(1,10,by=1), int=c(.58,.24,.08,.05,.01,.01,.02,.01,0,0), sd=rep(10,10))
   # Data on the cumulative incidence after 5 years (DO WE INCLUDE MORTALITY FROM TB)
-  dataCUM <- cbind(time=c(5), cum=c(0.05), sd=rep(1,1))
+  dataCUM <- cbind(time=c(5), cum=c(0.05), sd=rep(5,1))
   # Data on the incidence after 5 years
   dataINC <- cbind(time=c(6,7,8,9,10,11,12,13,14,15,16,17,18,19,20), inc=rep(0.00125,15), sd=rep(10,15))
   # Ragonnet Data on cumulative incidence with time
@@ -390,11 +390,11 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); li
   #Pars <- paramR[c(2,3,4,5)] # Clearance of infection
   #Pars <- paramR[c(1,3,6,7)] # Dynamic latent infection
   #Pars <- paramR[c(2,4,7,9)] # Regression, clearance, dynamic latency
-  FitB <- modFit(f=regrcostB2, p=log(c(Cu=1,Uf=0.002,Sl=100,Lh=0.001)))#,lower = log(c(0,0,0,0)), upper = log(c(10,2.3,2.5,2.4)))
-  FitR <- modFit(f=regrcostR2, p=log(c(Cu=1,Uf=0.002,Sl=10,Lh=0.001)))
-  FitC <- modFit(f=regrcostC2, p=log(c(Cu=1,Uf=0.002,Sl=100,Lh=0.001)))
-  FitD <- modFit(f=regrcostD2, p=log(c(Cu=1,Uf=0.002,Sl=100,Lh=0.001)))
-  FitA <- modFit(f=regrcostA2, p=log(c(Cu=1,Uf=0.002,Sl=100,Lh=0.001)))
+  FitB <- modFit(f=regrcostB2, p=log(c(Cu=1,Uf=0.002,Sl=2.00,Lh=0.1)))#,lower = log(c(0,0,0,0)), upper = log(c(12,12,12,12)))
+  FitR <- modFit(f=regrcostR2, p=log(c(Cu=1,Uf=0.002,Sl=2,Lh=1)))
+  FitC <- modFit(f=regrcostC2, p=log(c(Cu=1,Uf=0.002,Sl=20,Lh=0.1)))
+  FitD <- modFit(f=regrcostD2, p=log(c(Cu=1,Uf=0.002,Sl=200,Lh=0.1)))
+  FitA <- modFit(f=regrcostA2, p=log(c(Cu=10,Uf=0.002,Sl=3,Lh=50)))
   #exp(coef(FitB))
   ## Comparison of before and after fitting
   # ini <- calc(parameters = c(Pars)); final <- calc(parameters = c(exp(coef(Fit))))# Baseline
@@ -430,8 +430,8 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); li
    parametersB <- c(exp(coef(FitB))) # Baseline
    parametersR <- c(exp(coef(FitR)), Ls=0.30, Hl=0.30) # Regression in disease states
    parametersC <- c(exp(coef(FitC)), Cr=0.1) # Clearance of infection
-   parametersD <- c(exp(coef(FitD)), Uc=0.5, Su=0.05, Sf=1.00) # Dynamic latent infection
-   parametersA <- c(exp(coef(FitA)), Cr=0.1, Uc=0.5, Su=0.05, Sf=1.00, Ls=0.30, Hl=0.30) # Regression, clearance, dynamic latency
+   parametersD <- c(exp(coef(FitD)), Su=0.05) # Dynamic latent infection
+   parametersA <- c(exp(coef(FitA)), Cr=0.1, Su=0.05, Ls=0.30, Hl=0.30) # Regression, clearance, dynamic latency
    intervB <- function(parameters){
      # Fixed parameters (zero rates, non-TB mortality)
      parameters <- c(parameters, Us=0.00, Uc=0.00, Fu=0.00, Su=0.00, Sf=0.00, Hl=0.00, Ls=0.00, w=0.02, Ic=0.95, Cr=0.0, Lm=0.33, Hm=0.33) # Baseline
@@ -439,7 +439,7 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); li
      # Initial states
      state <- c(C=100000*unname(parameters["Ic"]), R=0, U=0, FG=100000*(1-unname(parameters["Ic"])), S=0, L=0, H=0, D=0, M=0, W=0)
      # Times for different simulation periods (i.e. with different notification rates)
-     time <- list(step=1, b1=1, b2=1, b3=10, b4=5)
+     time <- list(step=1, b1=1, b2=1, b3=10, b4=40)
      # Run for different periods in which the notification rate changes
      # Calculate initial state up until diagnosis
      out1 <- ode(y=state, times=seq(0,time$b1,by=time$step), func=regr, parms=c(parameters,Ld=0,Hd=0))
@@ -467,7 +467,7 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); li
      out$rag <- out$D/100000
      # Produce output for comparison with data
      return(out)
-   }  
+   }
    intervR <- function(parameters){
      # Fixed parameters (zero rates, non-TB mortality)
      parameters <- c(parameters, Us=0.00, Uc=0.00, Fu=0.00, Su=0.00, Sf=0.00, w=0.02, Ic=0.95, Cr=0.0, Lm=0.33, Hm=0.33) # Regression in disease states
@@ -475,7 +475,7 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); li
      # Initial states
      state <- c(C=100000*unname(parameters["Ic"]), R=0, U=0, FG=100000*(1-unname(parameters["Ic"])), S=0, L=0, H=0, D=0, M=0, W=0)
      # Times for different simulation periods (i.e. with different notification rates)
-     time <- list(step=1, b1=1, b2=1, b3=10, b4=5)
+     time <- list(step=1, b1=1, b2=1, b3=10, b4=40)
      # Run for different periods in which the notification rate changes
      # Calculate initial state up until diagnosis
      out1 <- ode(y=state, times=seq(0,time$b1,by=time$step), func=regr, parms=c(parameters,Ld=0,Hd=0))
@@ -486,8 +486,12 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); li
      # Calculate remaining until intervention time
      out3 <- ode(y=stateb2, times=seq(time$b1+time$b2,time$b1+time$b2+time$b3,by=time$step), func=regr, parms=c(parameters, Ld=1, Hd=1))
      stateb3 <- out3[time$b3/time$step+1, 2:ncol(out3)]
+     stateb4=stateb3
+     #stateb4["D"]=stateb3["D"]+stateb3["L"]+stateb3["H"]
+     #stateb4["L"]=0
+     #stateb4["H"]=0
      # Calculate after intervention
-     out4 <- ode(y=stateb3, times=seq(time$b1+time$b2+time$b3,time$b1+time$b2+time$b3+time$b4,by=time$step), func=regr, parms=c(parameters, Ld=1, Hd=1))
+     out4 <- ode(y=stateb4, times=seq(time$b1+time$b2+time$b3,time$b1+time$b2+time$b3+time$b4,by=time$step), func=regr, parms=c(parameters, Ld=1, Hd=1))
      # Compile output and remove burn period & repeated timesteps
      out <- rbind(out2, out3, out4)
      out <- out[-c(seq(1,time$b2/time$step,by=1), time$b2/time$step+2, time$b3/time$step+3),]
@@ -511,7 +515,7 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); li
      # Initial states
      state <- c(C=100000*unname(parameters["Ic"]), R=0, U=0, FG=100000*(1-unname(parameters["Ic"])), S=0, L=0, H=0, D=0, M=0, W=0)
      # Times for different simulation periods (i.e. with different notification rates)
-     time <- list(step=1, b1=1, b2=1, b3=10, b4=5)
+     time <- list(step=1, b1=1, b2=1, b3=10, b4=40)
      # Run for different periods in which the notification rate changes
      # Calculate initial state up until diagnosis
      out1 <- ode(y=state, times=seq(0,time$b1,by=time$step), func=regr, parms=c(parameters,Ld=0,Hd=0))
@@ -542,48 +546,12 @@ library("reshape2"); library("deSolve"); library("ggplot2"); library("plyr"); li
    }  
    intervD <- function(parameters){
      # Fixed parameters (zero rates, non-TB mortality)
-     parameters <- c(parameters, Us=0.00, Fu=0.00, Hl=0.00, Ls=0.00, w=0.02, Ic=0.95, Cr=0.0, Lm=0.33, Hm=0.33) # Dynamic latent infection
+     parameters <- c(parameters, Us=0.00, Uc=0.00, Sf=0.00, Fu=0.00, Hl=0.00, Ls=0.00, w=0.02, Ic=0.95, Cr=0.0, Lm=0.33, Hm=0.33) # Dynamic latent infection
      # Run simulation, incorporating periods with different notification rates into disease dynamics, & calculate output
      # Initial states
      state <- c(C=100000*unname(parameters["Ic"]), R=0, U=0, FG=100000*(1-unname(parameters["Ic"])), S=0, L=0, H=0, D=0, M=0, W=0)
      # Times for different simulation periods (i.e. with different notification rates)
-     time <- list(step=1, b1=1, b2=1, b3=10, b4=5)
-     # Run for different periods in which the notification rate changes
-     # Calculate initial state up until diagnosis
-     out1 <- ode(y=state, times=seq(0,time$b1,by=time$step), func=regr, parms=c(parameters,Ld=0,Hd=0))
-     stateb1 <- out1[time$b1/time$step+1, 2:ncol(out1)]
-     # Calculate coprevalent cases
-     out2 <- ode(y=stateb1, times=seq(time$b1,time$b1+time$b2,by=time$step), func=regr, parms=c(parameters,Ld=2,Hd=2))
-     stateb2 <- out2[time$b2/time$step+1, 2:ncol(out2)] #DO I NEED TO SET DIAGNOSED TO ZERO HERE?
-     # Calculate remaining until intervention time
-     out3 <- ode(y=stateb2, times=seq(time$b1+time$b2,time$b1+time$b2+time$b3,by=time$step), func=regr, parms=c(parameters, Ld=1, Hd=1))
-     stateb3 <- out3[time$b3/time$step+1, 2:ncol(out3)]
-     # Calculate after intervention
-     out4 <- ode(y=stateb3, times=seq(time$b1+time$b2+time$b3,time$b1+time$b2+time$b3+time$b4,by=time$step), func=regr, parms=c(parameters, Ld=1, Hd=1))
-     # Compile output and remove burn period & repeated timesteps
-     out <- rbind(out2, out3, out4)
-     out <- out[-c(seq(1,time$b2/time$step,by=1), time$b2/time$step+2, time$b3/time$step+3),]
-     out[,"time"] <- out[,"time"] - time$b1
-     out <- as.data.frame(out)
-     # Calculate incidence
-     out$inc <- (out$D-c(0,out$D[-nrow(out)]))/100000
-     # Calculate interval from conversion
-     out$int <- (out$inc*100000)/out$D[nrow(out)]
-     # Calculate cumulative incidence
-     out$cum <- out$D/100000
-     # Calculate cumulative incidence for Ragonnet data
-     out$rag <- out$D/100000
-     # Produce output for comparison with data
-     return(out)
-   }  
-   intervA <- function(parameters){
-     # Fixed parameters (zero rates, non-TB mortality)
-     parameters <- c(parameters, Us=0.00, Fu=0.00, w=0.02, Ic=0.95, Lm=0.33, Hm=0.33) # Regression, clearance, dynamic latency
-     # Run simulation, incorporating periods with different notification rates into disease dynamics, & calculate output
-     # Initial states
-     state <- c(C=100000*unname(parameters["Ic"]), R=0, U=0, FG=100000*(1-unname(parameters["Ic"])), S=0, L=0, H=0, D=0, M=0, W=0)
-     # Times for different simulation periods (i.e. with different notification rates)
-     time <- list(step=1, b1=1, b2=1, b3=10, b4=5)
+     time <- list(step=1, b1=1, b2=1, b3=10, b4=40)
      # Run for different periods in which the notification rate changes
      # Calculate initial state up until diagnosis
      out1 <- ode(y=state, times=seq(0,time$b1,by=time$step), func=regr, parms=c(parameters,Ld=0,Hd=0))
@@ -616,7 +584,36 @@ outB <- intervB(parametersB)
 outR <- intervR(parametersR)
 outC <- intervC(parametersC)
 outD <- intervD(parametersD)
-outA <- intervA(parametersA)
+outRB <- intervR(c(parametersB, Ls=0.30, Hl=0.30))
+outCB <- intervC(c(parametersB, Cr=0.1))
+outDB <- intervD(c(parametersB, Uc=0.5, Su=0.05, Sf=1.00))
+
+# baseB <- calcB(parametersB)
+# baseR <- calcR(parametersR)
+# baseC <- calcC(parametersC)
+# baseD <- calcD(parametersD)
+# baseA <- calcA(parametersA)
+#plot
+#ggplot(cbind(inc=c(outB$inc,outC$inc),cat=c(rep(1,nrow(outB)),rep(2,nrow(outB)))))
+plot(outB$int,col="red",type="l", xlim=c(0,20))
+points(dataINT[,"int"],col="black")
+lines(outR$int,col="blue")
+lines(outC$int,col="green")
+lines(outD$int,col="orange")
+lines(outRB$int,col="blue",lty=2)
+lines(outCB$int,col="green",lty=2)
+lines(outDB$int,col="orange",lty=2)
+
+plot(outC$cum,col="green",type="l")
+points(5,dataCUM[,"cum"],col="black")
+lines(outBC$cum,col="red")
+
+plot(outR$H+outR$L,col="blue",type="l")#,xlim=c(3,15),ylim=c(0,200))
+lines(outBR$H+outBR$L,col="red")
+
+plot(outD$cum,col="orange",type="l")
+points(5,dataCUM[,"cum"],col="black")
+lines(outBD$cum,col="red")
 ### PLOTS #################################################################################################################
   outplot <- melt(outA, id.vars=c("time"))
   # Choose outputs to compare, labels, line colours & types, y-legend, scale
@@ -657,7 +654,7 @@ outA <- intervA(parametersA)
                 sca = 2000)}
   # PLOT
   comp <- sink
-  plot.out <- {ggplot(outplot[outplot$variable%in%comp$out,], aes(time,value,colour=variable,linetype=variable)) +
+  plot.out <- {ggplot(outplot[outplC%ot$variable%in%comp$out,], aes(time,value,colour=variable,linetype=variable)) +
       # Lineplot of model results
       geom_line(size=2) +
       # Line types and legends
@@ -679,7 +676,8 @@ outA <- intervA(parametersA)
     x <- seq(-0.01,0.01, length=10)
     ORD = order(abs(dat[2,]-dat[1,]))
     # Bar colours: black = increase in parameter value, white = decrease in parameter value
-    barplot(dat[1,ORD], horiz=T, las=1, xlim=c(-0.02,0.02), xaxt='n', ylab='', beside=T, col=c('black'))
-    barplot(dat[2,ORD], horiz=T, las=1, xlim=c(-0.02,0.02), xaxt='n', ylab='', beside=T, col=c('white'), add=TRUE)
+    barplot(dat[1,ORD], horiz=T, las=1, xlim=c(-0.005,0.005), xaxt='n', ylab='', beside=T, col=c('black'))
+    barplot(dat[2,ORD], horiz=T, las=1, xlim=c(-0.005,0.005), xaxt='n', ylab='', beside=T, col=c('white'), add=TRUE)
     axis(1, at=pretty(x), lab=paste0(pretty(x)*100,"%"), las=TRUE)}
   plot.torn = recordPlot()
+  
